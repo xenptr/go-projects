@@ -1,141 +1,22 @@
 package main
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"strings"
-	"time"
 )
-
-const (
-	Done = "done"
-
-	InProgress = "in-progress"
-)
-
-type Task struct {
-	ID          int       `json:"id"`
-	Description string    `json:"description"`
-	Status      string    `json:"status,omitempty"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
-}
-
-var tasks []Task
-
-func CreateTask(desc string) int {
-	id := nextID()
-	task := Task{
-		ID:          id,
-		Description: desc,
-		Status:      "todo",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-	}
-	tasks = append(tasks, task)
-
-	return task.ID
-}
-
-func Read() {
-	data, err := json.MarshalIndent(tasks, "", " ")
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(string(data))
-}
-
-func Update(id int, desc string) {
-	for i := range tasks {
-		if tasks[i].ID == id {
-			tasks[i].Description = desc
-			tasks[i].UpdatedAt = time.Now()
-			return
-		}
-	}
-}
-
-func Delete(id int) {
-	for i := range tasks {
-		if tasks[i].ID == id {
-			tasks = append(tasks[:i], tasks[i+1:]...)
-			return
-		}
-	}
-}
-
-func Mark(id int, status string) {
-	for i := range tasks {
-		if tasks[i].ID == id {
-			tasks[i].Status = status
-			return
-		}
-	}
-}
-
-func nextID() int {
-	maxID := 0
-
-	for i := range tasks {
-		if tasks[i].ID > maxID {
-			maxID = tasks[i].ID
-		}
-	}
-
-	return maxID + 1
-}
-
-func LoadTasks() {
-	file, err := os.ReadFile("tasks.json")
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	if errors.Is(err, os.ErrNotExist) {
-		tasks = []Task{}
-		return
-	}
-
-	err = json.Unmarshal(file, &tasks)
-	if err != nil {
-		fmt.Println(err)
-	}
-}
-
-func SaveTasks() {
-	file, err := os.OpenFile("tasks.json", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer func() {
-		if err := file.Close(); err != nil {
-			fmt.Println(err)
-		}
-	}()
-
-	data, err := json.MarshalIndent(tasks, "", " ")
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	_, err = file.Write(data)
-	if err != nil {
-		fmt.Println(err)
-	}
-}
 
 func main() {
 	var command string
 
-	LoadTasks()
-	defer SaveTasks()
+	if err := LoadTasks(); err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	if len(os.Args) < 2 {
-		fmt.Println("Help menu")
+		Help()
 		return
 	}
 	command = os.Args[1]
@@ -146,8 +27,13 @@ func main() {
 			fmt.Println("Usage: add <description>")
 			return
 		}
+
 		description := strings.Join(os.Args[2:], " ")
-		id := CreateTask(description)
+		id := AddTask(description)
+		if err := SaveTasks(); err != nil {
+			fmt.Println(err)
+			return
+		}
 		fmt.Printf("Task added successfully (ID: %v)\n", id)
 		return
 	case "update":
@@ -156,67 +42,123 @@ func main() {
 			return
 		}
 
-		id, err := strconv.Atoi(os.Args[2])
+		id, err := parseID(os.Args[2])
 		if err != nil {
-			fmt.Print("ID must be an number")
+			fmt.Println(err)
 			return
 		}
-		description := strings.Join(os.Args[3:], " ")
 
-		Update(id, description)
+		description := strings.Join(os.Args[3:], " ")
+		if err := UpdateTask(id, description); err != nil {
+			fmt.Println(err)
+			return
+		}
+		if err := SaveTasks(); err != nil {
+			fmt.Println(err)
+			return
+		}
+		return
 	case "delete":
 		if len(os.Args) != 3 {
 			fmt.Println("Usage: delete <id>")
 			return
 		}
-		id, err := strconv.Atoi(os.Args[2])
+
+		id, err := parseID(os.Args[2])
 		if err != nil {
-			fmt.Print("ID must be an number")
+			fmt.Println(err)
 			return
 		}
-		Delete(id)
+
+		if err := DeleteTask(id); err != nil {
+			fmt.Println(err)
+			return
+		}
+		if err := SaveTasks(); err != nil {
+			fmt.Println(err)
+			return
+		}
+		return
 	case "mark-in-progress":
 		if len(os.Args) != 3 {
 			fmt.Println("Usage: mark-in-progress <id>")
 			return
 		}
-		id, err := strconv.Atoi(os.Args[2])
+
+		id, err := parseID(os.Args[2])
 		if err != nil {
-			fmt.Print("ID must be an number")
+			fmt.Println(err)
 			return
 		}
-		Mark(id, InProgress)
+
+		if err := SetTaskStatus(id, InProgress); err != nil {
+			fmt.Println(err)
+			return
+		}
+		if err := SaveTasks(); err != nil {
+			fmt.Println(err)
+			return
+		}
 		return
 	case "mark-done":
 		if len(os.Args) != 3 {
 			fmt.Println("Usage: mark-done <id>")
 			return
 		}
-		id, err := strconv.Atoi(os.Args[2])
+
+		id, err := parseID(os.Args[2])
 		if err != nil {
-			fmt.Print("ID must be an number")
+			fmt.Println(err)
 			return
 		}
-		Mark(id, Done)
+
+		if err := SetTaskStatus(id, Done); err != nil {
+			fmt.Println(err)
+			return
+		}
+		if err := SaveTasks(); err != nil {
+			fmt.Println(err)
+			return
+		}
 		return
 	case "list":
 		if len(os.Args) == 2 {
-			Read()
+			PrintTaskList(ListTasks())
 			return
-		} else if len(os.Args) == 3 {
-			status := os.Args[2]
-			for i := range tasks {
-				if tasks[i].Status == status {
-					fmt.Println(tasks[i])
-				}
-			}
-			return
-		} else {
-			fmt.Println("Usage: list [status]")
 		}
+
+		if len(os.Args) == 3 {
+			status, err := ParseStatus(os.Args[2])
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+
+			filtered, err := ListTasksByStatus(status)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			PrintTaskList(filtered)
+			return
+		}
+
+		fmt.Println("Usage: list [status]")
+		return
 	case "help":
-		fmt.Println("help menu")
+		Help()
+		return
 	default:
 		fmt.Print("Unknown Command")
+		return
 	}
+}
+
+func parseID(arg string) (int, error) {
+	id, err := strconv.Atoi(arg)
+	if err != nil {
+		return 0, fmt.Errorf("invalid ID: must be a number")
+	}
+
+	return id, nil
 }

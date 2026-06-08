@@ -1,30 +1,44 @@
 [
  {
   "id": 1,
-  "description": "test",
+  "description": "Complete Go task tracker CLI",
   "status": "todo",
-  "createdAt": "2026-06-07T17:33:30.120223707+05:30",
-  "updatedAt": "2026-06-07T17:33:30.120223773+05:30"
+  "createdAt": "2026-06-07 21:13:45",
+  "updatedAt": "2026-06-07 21:13:45"
  },
  {
-  "id": 2,
-  "description": "test2",
-  "status": "todo",
-  "createdAt": "2026-06-07T17:33:32.513370089+05:30",
-  "updatedAt": "2026-06-07T17:33:32.513370159+05:30"
+  "id": 3,
+  "description": "Learn JSON marshaling in Go",
+  "status": "done",
+  "createdAt": "2026-06-07 21:15:10",
+  "updatedAt": "2026-06-07 21:17:27"
  },
  {
   "id": 4,
-  "description": "test2",
-  "status": "todo",
-  "createdAt": "2026-06-07T17:34:54.845275155+05:30",
-  "updatedAt": "2026-06-07T17:34:54.845275212+05:30"
+  "description": "Push task tracker to GitHub",
+  "status": "done",
+  "createdAt": "2026-06-07 21:15:32",
+  "updatedAt": "2026-06-07 21:18:02"
  },
  {
   "id": 5,
-  "description": "test2",
+  "description": "Write unit tests for CreateTask",
   "status": "todo",
-  "createdAt": "2026-06-07T18:11:20.152027232+05:30",
-  "updatedAt": "2026-06-07T18:11:20.152027278+05:30"
+  "createdAt": "2026-06-07 21:15:50",
+  "updatedAt": "2026-06-07 21:15:50"
+ },
+ {
+  "id": 6,
+  "description": "Practice 10 array problems in C",
+  "status": "todo",
+  "createdAt": "2026-06-07 21:16:05",
+  "updatedAt": "2026-06-07 21:21:35"
+ },
+ {
+  "id": 7,
+  "description": "Refactor task tracker code",
+  "status": "in-progress",
+  "createdAt": "2026-06-07 21:22:36",
+  "updatedAt": "2026-06-07 21:22:52"
  }
 ]
