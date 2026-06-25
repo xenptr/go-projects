@@ -18,6 +18,13 @@ const (
 	WatchEvent                    EventType = "WatchEvent"
 )
 
+var EventTypes = []EventType{
+	CommitCommentEvent, CreateEvent, DeleteEvent, ForkEvent,
+	IssueCommentEvent, IssuesEvent, MemberEvent, PullRequestEvent,
+	PullRequestReviewEvent, PullRequestReviewCommentEvent,
+	PushEvent, ReleaseEvent, WatchEvent,
+}
+
 type Event struct {
 	Type    EventType `json:"type"`
 	Repo    Repo      `json:"repo"`
@@ -74,4 +81,3 @@ type Review struct {
 type Release struct {
 	TagName string `json:"tag_name"`
 }
-
