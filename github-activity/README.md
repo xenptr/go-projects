@@ -48,19 +48,25 @@ Run the executable:
 
 ## Usage
 
-Pass a GitHub username as the only argument:
+```
+github-activity <username> [options]
+```
+
+| Flag | Description |
+|------|-------------|
+| `--filter <type>` | Filter by event type (e.g. `PushEvent`) |
+| `--limit <n>` | Limit the number of events fetched (0 = no limit, max 100) |
+| `--json` | Output raw JSON |
+| `--types` | List all supported event types |
+
+Examples:
 
 ```bash
 ./github-activity torvalds
-```
-
-Example output:
-
-```
-- Pushed changes to torvalds/linux
-- Opened issue #1234 in torvalds/linux
-- Merged PR #5678 in torvalds/linux
-- Starred someuser/somerepo
+./github-activity torvalds --limit 10
+./github-activity torvalds --filter PushEvent
+./github-activity torvalds --limit 5 --filter PushEvent
+./github-activity torvalds --json
 ```
 
 If the user has no recent public activity:
@@ -73,10 +79,12 @@ No recent public activity found for <username>
 
 ```text
 .
-├── main.go       # Entry point, argument parsing, output loop
-├── github.go     # GitHub API client and event fetching
-├── display.go    # Event formatting and human-readable output
-├── types.go      # Event, Payload, and related type definitions
+├── main.go         # Entry point, flag parsing, output loop
+├── github.go       # GitHub API client and event fetching
+├── formatter.go    # Event formatting and human-readable output
+├── config.go       # CLI flag definitions and Config struct
+├── types.go        # Event, Payload, and related type definitions
+├── eventtypes.go   # Supported event type list
 ├── go.mod
 └── README.md
 ```
@@ -86,7 +94,7 @@ No recent public activity found for <username>
 Uses the public [GitHub Events API](https://docs.github.com/en/rest/activity/events):
 
 ```
-GET https://api.github.com/users/{username}/events
+GET https://api.github.com/users/{username}/events?per_page={limit}
 ```
 
 No authentication is required, but unauthenticated requests are subject to GitHub's rate limits.
