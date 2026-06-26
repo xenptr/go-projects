@@ -1,6 +1,6 @@
 # GitHub Activity CLI
 
-A command-line tool that fetches and displays the recent public activity of any GitHub user using the GitHub Events API.
+A small CLI tool to check what a GitHub user has been up to lately. It hits the GitHub Events API and prints a readable summary of their recent public activity.
 
 ## Project URL
 
@@ -8,16 +8,12 @@ https://roadmap.sh/projects/github-user-activity
 
 ## Features
 
-- Fetch recent public activity for any GitHub user
-- Display human-readable summaries of GitHub events including:
-  - Push events
-  - Pull request opens, closes, merges, reviews, and comments
-  - Issue opens, closes, assignments, and labels
-  - Repository creates, forks, and deletes
-  - Stars (watch events)
-  - Releases
-  - Member (collaborator) changes
-  - Commit comments
+- View a user's recent public GitHub activity
+- Display events in a readable format
+- Filter events by type
+- Profile view with basic user info (`--profile`)
+- Output raw API responses as JSON (`--json`)
+- Cache responses for five minutes to reduce API requests (`--cache`)
 
 ## Installation
 
@@ -28,7 +24,7 @@ git clone <repository-url>
 cd github-activity
 ```
 
-Run directly:
+Run without building:
 
 ```bash
 go run . <username>
@@ -56,7 +52,9 @@ github-activity <username> [options]
 |------|-------------|
 | `--filter <type>` | Filter by event type (e.g. `PushEvent`) |
 | `--limit <n>` | Limit the number of events fetched (0 = no limit, max 100) |
-| `--json` | Output raw JSON |
+| `--json` | Output as JSON instead of formatted text |
+| `--profile` | Show the user's GitHub profile info |
+| `--cache` | Cache API responses for 5 minutes |
 | `--types` | List all supported event types |
 
 Examples:
@@ -65,26 +63,23 @@ Examples:
 ./github-activity torvalds
 ./github-activity torvalds --limit 10
 ./github-activity torvalds --filter PushEvent
-./github-activity torvalds --limit 5 --filter PushEvent
+./github-activity torvalds --profile
+./github-activity torvalds --profile --json
+./github-activity torvalds --limit 5 --cache
 ./github-activity torvalds --json
-```
-
-If the user has no recent public activity:
-
-```
-No recent public activity found for <username>
 ```
 
 ## Project Structure
 
 ```text
 .
-├── main.go         # Entry point, flag parsing, output loop
-├── github.go       # GitHub API client and event fetching
-├── formatter.go    # Event formatting and human-readable output
-├── config.go       # CLI flag definitions and Config struct
-├── types.go        # Event, Payload, and related type definitions
-├── eventtypes.go   # Supported event type list
+├── main.go         # Entry point and output logic
+├── github.go       # GitHub API client
+├── cache.go        # File-based response caching
+├── formatter.go    # Formats events for display
+├── config.go       # CLI flags and Config struct
+├── types.go        # API response structs
+├── eventtypes.go   # Supported GitHub event types
 ├── go.mod
 └── README.md
 ```
@@ -95,6 +90,7 @@ Uses the public [GitHub Events API](https://docs.github.com/en/rest/activity/eve
 
 ```
 GET https://api.github.com/users/{username}/events?per_page={limit}
+GET https://api.github.com/users/{username}
 ```
 
-No authentication is required, but unauthenticated requests are subject to GitHub's rate limits.
+No authentication needed, but unauthenticated requests are rate-limited by GitHub (60 requests/hour). Use `--cache` to stay well within that.
