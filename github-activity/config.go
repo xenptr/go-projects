@@ -11,6 +11,8 @@ type Config struct {
 	Types    bool
 	Limit    int
 	JSON     bool
+	Profile  bool
+	Cache    bool
 }
 
 func parseFlags() Config {
@@ -23,6 +25,8 @@ func parseFlags() Config {
 	types := flag.Bool("types", false, "List all supported event types")
 	limit := flag.Int("limit", 0, "Limit the number of events displayed (0 = no limit, max 100 per GitHub API)")
 	jsonOutput := flag.Bool("json", false, "Output raw JSON")
+	profile := flag.Bool("profile", false, "Show GitHub profile information")
+	cache := flag.Bool("cache", false, "Cache API responses for 5 minutes")
 
 	if err := flag.CommandLine.Parse(os.Args[2:]); err != nil {
 		os.Exit(2)
@@ -39,6 +43,8 @@ func parseFlags() Config {
 		Types:    *types,
 		Limit:    *limit,
 		JSON:     *jsonOutput,
+		Profile:  *profile,
+		Cache:    *cache,
 	}
 
 }

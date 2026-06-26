@@ -7,6 +7,17 @@ import (
 	"os"
 )
 
+func printJSON(v any) error {
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	return enc.Encode(v)
+}
+
+func fatal(err error) {
+	fmt.Fprintln(os.Stderr, err)
+	os.Exit(1)
+}
+
 func main() {
 	flag.Usage = func() {
 		fmt.Fprintln(os.Stderr, "Usage: github-activity <username> [options]")
@@ -21,33 +32,56 @@ func main() {
 	}
 
 	filterType, ok := parseEventType(cfg.Filter)
-
 	if !ok {
 		fmt.Fprintf(os.Stderr, "Unknown event type: %s\n\n", cfg.Filter)
 		printEventTypes()
 		os.Exit(1)
 	}
 
-	if cfg.JSON {
-		data, err := fetchRawUserEvents(cfg.Username, cfg.Limit)
+	if cfg.Profile {
+		var (
+			data User
+			err  error
+		)
+
+		if cfg.Cache {
+			data, err = fetchUserWithCache(cfg.Username)
+		} else {
+			data, err = fetchUser(cfg.Username)
+		}
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			fatal(err)
 		}
 
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(data); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+		if cfg.JSON {
+			if err := printJSON(data); err != nil {
+				fatal(err)
+			}
+			return
 		}
-		return
+
+		fmt.Print(formatUser(data))
 	}
 
-	events, err := fetchUserEvents(cfg.Username, cfg.Limit)
+	var (
+		events []Event
+		err    error
+	)
+
+	if cfg.Cache {
+		events, err = fetchUserEventsWithCache(cfg.Username, cfg.Limit)
+	} else {
+		events, err = fetchUserEvents(cfg.Username, cfg.Limit)
+	}
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		fatal(err)
+	}
+
+	if cfg.JSON {
+		if err := printJSON(events); err != nil {
+			fatal(err)
+		}
+		return
 	}
 
 	if len(events) == 0 {
@@ -55,13 +89,14 @@ func main() {
 		return
 	}
 
+	fmt.Printf("Recent activity for %s:\n\n", cfg.Username)
 	for _, event := range events {
 		if filterType != "" && event.Type != filterType {
 			continue
 		}
 
 		if msg := formatEvent(event); msg != "" {
-			fmt.Print(msg)
+			fmt.Print("  ", msg)
 		}
 	}
 }

@@ -7,10 +7,9 @@ import (
 )
 
 func printEventTypes() {
-	fmt.Println("Available types")
+	fmt.Println("Available event types")
 	for _, t := range EventTypes {
-		fmt.Print("  ")
-		fmt.Println(t)
+		fmt.Printf("  %s\n", t)
 	}
 }
 

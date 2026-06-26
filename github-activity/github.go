@@ -7,9 +7,11 @@ import (
 )
 
 const (
-	apiBase        = "https://api.github.com"
-	apiVersion     = "2026-03-10"
+	apiBase    = "https://api.github.com"
+	apiVersion = "2026-03-10"
+
 	eventsEndpoint = "/users/%s/events"
+	userEndpoint   = "/users/%s"
 )
 
 var client = &http.Client{}
@@ -29,8 +31,15 @@ func githubRequest(url string, out any) error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("github API returned %s", resp.Status)
+	switch resp.StatusCode {
+	case http.StatusOK:
+		// ok
+	case http.StatusNotFound:
+		return fmt.Errorf("user not found")
+	case http.StatusForbidden, http.StatusTooManyRequests:
+		return fmt.Errorf("GitHub API rate limit exceeded, try again later")
+	default:
+		return fmt.Errorf("GitHub API returned status: %s", resp.Status)
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
@@ -61,6 +70,18 @@ func fetchUserEvents(username string, limit int) ([]Event, error) {
 	return githubGetJSON[[]Event](userEventsURL(username, limit))
 }
 
-func fetchRawUserEvents(username string, limit int) ([]any, error) {
-	return githubGetJSON[[]any](userEventsURL(username, limit))
+// func fetchRawUserEvents(username string, limit int) ([]any, error) {
+// 	return githubGetJSON[[]any](userEventsURL(username, limit))
+// }
+
+func userURL(username string) string {
+	return fmt.Sprintf(apiBase+userEndpoint, username)
 }
+
+func fetchUser(username string) (User, error) {
+	return githubGetJSON[User](userURL(username))
+}
+
+// func fetchRawUser(username string) (any, error) {
+// 	return githubGetJSON[any](userURL(username))
+// }
