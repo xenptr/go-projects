@@ -64,12 +64,25 @@
       "category": "food"
     },
     {
-      "id": 10,
-      "date": "2026-06-05T09:15:42+05:30",
-      "description": "Coffee with client",
-      "amount": 180,
+      "id": 11,
+      "date": "2026-06-30T12:15:13.7575414+05:30",
+      "description": "Test coffee",
+      "amount": 25,
       "category": "food"
+    },
+    {
+      "id": 12,
+      "date": "2026-06-30T12:50:47.8315692+05:30",
+      "description": "Refactor test",
+      "amount": 99,
+      "category": "dev"
     }
   ],
-  "budgets": null
+  "budgets": [
+    {
+      "year": 2026,
+      "month": 6,
+      "amount": 3000
+    }
+  ]
 }
