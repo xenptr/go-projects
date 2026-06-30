@@ -16,26 +16,30 @@ func main() {
 	addFlags := flag.NewFlagSet("add", flag.ExitOnError)
 	addDescription := addFlags.String("description", "", "Expense description")
 	addAmount := addFlags.Float64("amount", 0, "Expense amount")
-	addCategory := addFlags.String("category", "", "Expense category")
+	addCategory := addFlags.String("category", "", "Category name")
 
 	updateFlags := flag.NewFlagSet("update", flag.ExitOnError)
 	updateID := updateFlags.Int("id", 0, "Expense ID")
 	updateDescription := updateFlags.String("description", "", "New description")
 	updateAmount := updateFlags.Float64("amount", 0, "New amount")
-	updateCategory := updateFlags.String("category", "", "Expense category")
+	updateCategory := updateFlags.String("category", "", "Category name")
 
 	deleteFlags := flag.NewFlagSet("delete", flag.ExitOnError)
 	deleteID := deleteFlags.Int("id", 0, "Expense ID")
 
 	listFlags := flag.NewFlagSet("list", flag.ExitOnError)
-	listCategory := listFlags.String("category", "", "Expense category")
+	listCategory := listFlags.String("category", "", "Category name")
 
 	summaryFlags := flag.NewFlagSet("summary", flag.ExitOnError)
-	summaryMonth := summaryFlags.Int("month", 0, "Month")
+	summaryMonth := summaryFlags.Int("month", 0, "Month number (1-12)")
 
 	exportFlags := flag.NewFlagSet("export", flag.ExitOnError)
-	exportCategory := exportFlags.String("category", "", "Expense category")
-	exportMonth := exportFlags.Int("month", 0, "Month")
+	exportCategory := exportFlags.String("category", "", "Category name")
+	exportMonth := exportFlags.Int("month", 0, "Month number (1-12)")
+
+	budgetFlags := flag.NewFlagSet("budget", flag.ExitOnError)
+	budgetMonth := budgetFlags.Int("month", 0, "Month number (1-12)")
+	budgetAmount := budgetFlags.Float64("amount", 0, "Budget amount")
 
 	flag.Usage = func() {
 		fmt.Println("Usage:")
@@ -43,17 +47,21 @@ func main() {
 
 		fmt.Fprintln(os.Stderr, "Commands:")
 		fmt.Fprintln(os.Stderr, "  add       Add a new expense")
-		fmt.Fprintln(os.Stderr, "  update    Update an expense")
+		fmt.Fprintln(os.Stderr, "  update    Update an existing expense")
 		fmt.Fprintln(os.Stderr, "  delete    Delete an expense")
 		fmt.Fprintln(os.Stderr, "  list      List expenses")
-		fmt.Fprintln(os.Stderr, "  summary   Show total expenses")
+		fmt.Fprintln(os.Stderr, "  summary   Show expense totals")
 		fmt.Fprintln(os.Stderr, "  export    Export expenses to CSV")
+		fmt.Fprintln(os.Stderr, "  budget    Set or view monthly budgets")
 
 		for _, fs := range []*flag.FlagSet{
 			addFlags,
 			updateFlags,
 			deleteFlags,
 			listFlags,
+			summaryFlags,
+			exportFlags,
+			budgetFlags,
 		} {
 			fmt.Printf("\n%s:\n", fs.Name())
 			fs.PrintDefaults()
@@ -63,8 +71,11 @@ func main() {
 	flag.Parse()
 
 	if len(os.Args) < 2 {
+		flag.Usage()
 		os.Exit(1)
 	}
+
+	expenses := db.Expenses
 
 	switch os.Args[1] {
 	case "add":
@@ -92,16 +103,33 @@ func main() {
 			Amount:      *addAmount,
 			Category:    *addCategory,
 		}
-		expenses = append(expenses, data)
+		db.Expenses = append(db.Expenses, data)
 		if err := save(); err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
+
+		spent := totalByMonth(time.Now().Month())
+		if budget, ok := getBudgetForMonth(time.Now().Month()); ok && spent > budget.Amount {
+			fmt.Printf(
+				"Warning: You are %.2f over your %s budget (Budget: %.2f, Spent: %.2f).\n",
+				spent-budget.Amount,
+				time.Now().Month(),
+				budget.Amount,
+				spent,
+			)
+		}
+
 		fmt.Printf("Expense added successfully (ID: %d)\n", data.ID)
 		return
 
 	case "update":
 		updateFlags.Parse(os.Args[2:])
+
+		if *updateID == 0 {
+			fmt.Println("id is required")
+			return
+		}
 
 		if *updateAmount <= 0 {
 			fmt.Println("amount must be greater than zero")
@@ -114,15 +142,33 @@ func main() {
 			return
 		}
 
-		expenses[index].Date = time.Now()
-		expenses[index].Description = *updateDescription
-		expenses[index].Amount = *updateAmount
-		expenses[index].Category = *updateCategory
+		if *updateDescription != "" {
+			db.Expenses[index].Description = *updateDescription
+		}
+		if *updateAmount > 0 {
+			db.Expenses[index].Amount = *updateAmount
+		}
+		if *updateCategory != "" {
+			db.Expenses[index].Category = *updateCategory
+		}
+		db.Expenses[index].Date = time.Now()
 
 		if err := save(); err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
+
+		spent := totalByMonth(db.Expenses[index].Date.Month())
+		if budget, ok := getBudgetForMonth(db.Expenses[index].Date.Month()); ok && spent > budget.Amount {
+			fmt.Printf(
+				"Warning: You are %.2f over your %s budget (Budget: %.2f, Spent: %.2f).\n",
+				spent-budget.Amount,
+				db.Expenses[index].Date.Month(),
+				budget.Amount,
+				spent,
+			)
+		}
+
 		fmt.Println("Expense updated successfully")
 		return
 
@@ -134,11 +180,12 @@ func main() {
 			fmt.Printf("delete expense: %v\n", err)
 			return
 		}
-		expenses = append(expenses[:index], expenses[index+1:]...)
+		db.Expenses = append(db.Expenses[:index], db.Expenses[index+1:]...)
 		if err := save(); err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
+		fmt.Println("Expense deleted successfully")
 		return
 
 	case "list":
@@ -177,37 +224,69 @@ func main() {
 		summaryFlags.Parse(os.Args[2:])
 
 		if *summaryMonth != 0 {
-			fmt.Printf("Total expenses for %s: $%.2f",
+			fmt.Printf("Total expenses for %s: $%.2f\n",
 				time.Month(*summaryMonth).String(),
 				totalByMonth(time.Month(*summaryMonth)),
 			)
 			return
 		}
 
-		fmt.Printf("Total expenses: $%.2f", total())
+		fmt.Printf("Total expenses: $%.2f\n", total())
 		return
 
 	case "export":
 		exportFlags.Parse(os.Args[2:])
 
-		if *exportCategory != "" {
+		if *exportCategory != "" && *exportMonth != 0 {
+			expenses = filterByCategoryAndMonth(*exportCategory, time.Month(*exportMonth))
+		} else if *exportCategory != "" {
 			expenses = filterByCategory(*exportCategory)
-		}
-
-		if *exportMonth != 0 {
+		} else if *exportMonth != 0 {
 			expenses = filterByMonth(time.Month(*exportMonth))
 		}
 
-		if *exportCategory != "" && *exportMonth != 0 {
-			expenses = filterByCatMonth(*exportCategory, time.Month(*exportMonth))
-		}
-
-		if err := export(); err != nil {
+		if err := export(expenses); err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
+		return
+
+	case "budget":
+		budgetFlags.Parse(os.Args[2:])
+
+		if *budgetMonth != 0 && *budgetAmount > 0 {
+			spent := totalByMonth(time.Month(*budgetMonth))
+
+			setBudgetForMonth(time.Month(*budgetMonth), *budgetAmount)
+
+			if spent > *budgetAmount {
+				fmt.Printf(
+					"Warning: Current spending (%.2f) already exceeds the budget you just set (%.2f) by %.2f.\n",
+					spent,
+					*budgetAmount,
+					spent-*budgetAmount,
+				)
+			}
+
+			return
+		}
+
+		if *budgetMonth != 0 {
+			spent := totalByMonth(time.Month(*budgetMonth))
+
+			if budget, ok := getBudgetForMonth(time.Month(*budgetMonth)); ok {
+				fmt.Printf("Spent: %.2f / %.2f\n", spent, budget.Amount)
+				fmt.Printf("Remaining: %.2f\n", budget.Amount-spent)
+			} else {
+				fmt.Println("No budget has been set for this month")
+			}
+		}
+
+		return
 
 	default:
-		return
+		fmt.Fprintf(os.Stderr, "unknown command: %s\n", os.Args[1])
+		flag.Usage()
+		os.Exit(1)
 	}
 }

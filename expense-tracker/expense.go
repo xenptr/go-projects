@@ -7,25 +7,29 @@ import (
 )
 
 type Expense struct {
-	ID          int `json:"id"`
-	Date        time.Time
-	Description string  `json:"description"`
-	Amount      float64 `json:"amount"`
-	Category    string  `json:"category"`
+	ID          int       `json:"id"`
+	Date        time.Time `json:"date"`
+	Description string    `json:"description"`
+	Amount      float64   `json:"amount"`
+	Category    string    `json:"category"`
 }
 
-var expenses []Expense
+type Budget struct {
+	Year   int        `json:"year"`
+	Month  time.Month `json:"month"`
+	Amount float64    `json:"amount"`
+}
 
 func nextID() int {
-	if len(expenses) < 1 {
-		return 0
+	if len(db.Expenses) < 1 {
+		return 1
 	}
 
 	var maxID int
 
-	for i := range expenses {
-		if expenses[i].ID > maxID {
-			maxID = expenses[i].ID
+	for i := range db.Expenses {
+		if db.Expenses[i].ID > maxID {
+			maxID = db.Expenses[i].ID
 		}
 	}
 
@@ -33,8 +37,8 @@ func nextID() int {
 }
 
 func find(id int) (int, error) {
-	for i := range expenses {
-		if expenses[i].ID == id {
+	for i := range db.Expenses {
+		if db.Expenses[i].ID == id {
 			return i, nil
 		}
 	}
@@ -44,17 +48,17 @@ func find(id int) (int, error) {
 
 func total() float64 {
 	var sum float64
-	for i := range expenses {
-		sum += expenses[i].Amount
+	for i := range db.Expenses {
+		sum += db.Expenses[i].Amount
 	}
 	return sum
 }
 
 func totalByMonth(m time.Month) float64 {
 	var sum float64
-	for i := range expenses {
-		if expenses[i].Date.Year() == time.Now().Year() && expenses[i].Date.Month() == m {
-			sum += expenses[i].Amount
+	for i := range db.Expenses {
+		if db.Expenses[i].Date.Year() == time.Now().Year() && db.Expenses[i].Date.Month() == m {
+			sum += db.Expenses[i].Amount
 		}
 	}
 	return sum
@@ -63,9 +67,9 @@ func totalByMonth(m time.Month) float64 {
 func filterByCategory(c string) []Expense {
 	var filtered []Expense
 
-	for i := range expenses {
-		if strings.EqualFold(expenses[i].Category, c) {
-			filtered = append(filtered, expenses[i])
+	for i := range db.Expenses {
+		if strings.EqualFold(db.Expenses[i].Category, c) {
+			filtered = append(filtered, db.Expenses[i])
 		}
 	}
 
@@ -75,23 +79,52 @@ func filterByCategory(c string) []Expense {
 func filterByMonth(m time.Month) []Expense {
 	var filtered []Expense
 
-	for i := range expenses {
-		if expenses[i].Date.Month() == m {
-			filtered = append(filtered, expenses[i])
+	for i := range db.Expenses {
+		if db.Expenses[i].Date.Month() == m {
+			filtered = append(filtered, db.Expenses[i])
 		}
 	}
 
 	return filtered
 }
 
-func filterByCatMonth(c string, m time.Month) []Expense {
+func filterByCategoryAndMonth(c string, m time.Month) []Expense {
 	var filtered []Expense
 
-	for i := range expenses {
-		if strings.EqualFold(expenses[i].Category, c) && expenses[i].Date.Month() == m {
-			filtered = append(filtered, expenses[i])
+	for i := range db.Expenses {
+		if strings.EqualFold(db.Expenses[i].Category, c) && db.Expenses[i].Date.Month() == m {
+			filtered = append(filtered, db.Expenses[i])
 		}
 	}
 
 	return filtered
+}
+
+func getBudgetForMonth(m time.Month) (Budget, bool) {
+	year := time.Now().Year()
+
+	for i := range db.Budgets {
+		if db.Budgets[i].Year == year && db.Budgets[i].Month == m {
+			return db.Budgets[i], true
+		}
+	}
+
+	return Budget{}, false
+}
+
+func setBudgetForMonth(m time.Month, amount float64) {
+	year := time.Now().Year()
+
+	for i := range db.Budgets {
+		if db.Budgets[i].Year == year && db.Budgets[i].Month == m {
+			db.Budgets[i].Amount = amount
+			return
+		}
+	}
+
+	db.Budgets = append(db.Budgets, Budget{
+		Year:   year,
+		Month:  m,
+		Amount: amount,
+	})
 }

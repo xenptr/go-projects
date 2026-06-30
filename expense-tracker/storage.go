@@ -9,10 +9,18 @@ import (
 	"time"
 )
 
+type Database struct {
+	Expenses []Expense `json:"expenses"`
+	Budgets  []Budget  `json:"budgets"`
+}
+
+var db *Database
+
 func load() error {
+	db = &Database{}
+
 	file, err := os.ReadFile("expenses.json")
 	if errors.Is(err, os.ErrNotExist) {
-		expenses = []Expense{}
 		return nil
 	}
 	if err != nil {
@@ -20,11 +28,10 @@ func load() error {
 	}
 
 	if len(file) == 0 {
-		expenses = []Expense{}
 		return nil
 	}
 
-	return json.Unmarshal(file, &expenses)
+	return json.Unmarshal(file, db)
 }
 
 func save() error {
@@ -34,7 +41,7 @@ func save() error {
 	}
 	defer file.Close()
 
-	data, err := json.MarshalIndent(expenses, "", " ")
+	data, err := json.MarshalIndent(db, "", " ")
 	if err != nil {
 		return err
 	}
@@ -43,7 +50,7 @@ func save() error {
 	return err
 }
 
-func export() error {
+func export(expenses []Expense) error {
 	file, err := os.Create("expenses.csv")
 	if err != nil {
 		return err
@@ -62,6 +69,7 @@ func export() error {
 			exp.Date.Format(time.DateOnly),
 			exp.Description,
 			strconv.FormatFloat(exp.Amount, 'f', 2, 64),
+			exp.Category,
 		}
 
 		if err := w.Write(record); err != nil {
