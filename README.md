@@ -14,6 +14,10 @@ Projects are organized into separate directories, each with its own source code 
    A CLI tool that fetches and displays the recent public activity of any GitHub user via the GitHub Events API.
    Project URL: https://roadmap.sh/projects/github-user-activity
 
+3. **Expense Tracker**
+   A CLI tool to manage personal finances. Add expenses, filter by category, set monthly budgets, and export to CSV.
+   Project URL: https://roadmap.sh/projects/expense-tracker
+
 ## More Projects
 
 Additional projects will be added as I progress through the roadmap.
