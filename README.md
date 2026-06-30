@@ -18,6 +18,10 @@ Projects are organized into separate directories, each with its own source code 
    A CLI tool to manage personal finances. Add expenses, filter by category, set monthly budgets, and export to CSV.
    Project URL: https://roadmap.sh/projects/expense-tracker
 
+4. **Number Guessing Game**
+   A CLI game where the computer picks a number between 1 and 100 and you have to guess it. Choose a difficulty level, get proximity hints, and track your best score across multiple rounds.
+   Project URL: https://roadmap.sh/projects/number-guessing-game
+
 ## More Projects
 
 Additional projects will be added as I progress through the roadmap.
