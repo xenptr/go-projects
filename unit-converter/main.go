@@ -16,10 +16,79 @@ const (
 )
 
 type PageData struct {
-	Value  float64
-	From   string
-	To     string
+	UnitType string
+
+	Value float64
+	From  string
+	To    string
+
+	HasResult bool
 	Result float64
+
+	Title      string
+	InputLabel string
+	Units      []Unit
+}
+
+type Unit struct {
+	Value string
+	Label string
+}
+
+var lengthUnits = []Unit{
+	{"mm", "Millimeter (mm)"},
+	{"cm", "Centimeter (cm)"},
+	{"m", "Meter (m)"},
+	{"km", "Kilometer (km)"},
+	{"in", "Inch (in)"},
+	{"ft", "Foot (ft)"},
+	{"yd", "Yard (yd)"},
+	{"mi", "Mile (mi)"},
+}
+
+var weightUnits = []Unit{
+	{"mg", "Milligram (mg)"},
+	{"g", "Gram (g)"},
+	{"kg", "Kilogram (kg)"},
+	{"oz", "Ounce (oz)"},
+	{"lb", "Pound (lb)"},
+}
+
+var temperatureUnits = []Unit{
+	{"c", "Celsius (°C)"},
+	{"f", "Fahrenheit (°F)"},
+	{"k", "Kelvin (K)"},
+}
+
+func buildPageData(unitType string) *PageData {
+	switch unitType {
+	case UnitTypeLength:
+		return &PageData{
+			UnitType:   unitType,
+			Title:      "Length",
+			InputLabel: "Enter the length to convert",
+			Units:      lengthUnits,
+		}
+
+	case UnitTypeWeight:
+		return &PageData{
+			UnitType:   unitType,
+			Title:      "Weight",
+			InputLabel: "Enter the weight to convert",
+			Units:      weightUnits,
+		}
+
+	case UnitTypeTemperature:
+		return &PageData{
+			UnitType:   unitType,
+			Title:      "Temperature",
+			InputLabel: "Enter the temperature to convert",
+			Units:      temperatureUnits,
+		}
+
+	default:
+		return &PageData{}
+	}
 }
 
 func formatFloat(f float64) string {
@@ -32,14 +101,13 @@ var templates = template.Must(
 			"format": formatFloat,
 		}).
 		ParseFiles(
-			"tmpl/"+UnitTypeLength+".html",
-			"tmpl/"+UnitTypeWeight+".html",
-			"tmpl/"+UnitTypeTemperature+".html",
+			"tmpl/layout.html",
+			"tmpl/converter.html",
 		),
 )
 
-func renderTemplate(w http.ResponseWriter, tmpl string, data *PageData) {
-	if err := templates.ExecuteTemplate(w, tmpl+".html", data); err != nil {
+func renderPage(w http.ResponseWriter, data *PageData) {
+	if err := templates.ExecuteTemplate(w, "layout", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -60,7 +128,7 @@ func unitHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodGet:
-		renderTemplate(w, unitType, nil)
+		renderPage(w, buildPageData(unitType))
 	case http.MethodPost:
 		processConversion(w, r, unitType)
 	default:
@@ -89,14 +157,15 @@ func processConversion(w http.ResponseWriter, r *http.Request, unitType string) 
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	data := &PageData{
-		Value:  value,
-		From:   from,
-		To:     to,
-		Result: result,
-	}
 
-	renderTemplate(w, unitType, data)
+	data := buildPageData(unitType)
+	data.Value = value
+	data.From = from
+	data.To = to
+	data.HasResult = true
+	data.Result = result
+
+	renderPage(w, data)
 }
 
 func convert(unitType string, value float64, from, to string) (float64, error) {

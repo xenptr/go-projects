@@ -1,0 +1,52 @@
+{{define "content"}}
+
+{{if .HasResult}}
+
+<p class="result-text">
+    Result of your calculation
+</p>
+
+<div class="result">
+    {{format .Value}} {{.From}} = {{format .Result}} {{.To}}
+</div>
+
+<a href="/{{.UnitType}}" class="reset-btn">Reset</a>
+
+{{else}}
+
+<form method="post">
+
+    <div>
+        <label>{{.InputLabel}}</label>
+        <input type="number" name="value" placeholder="20" step="any" required>
+    </div>
+
+    <div>
+        <label>Unit to Convert From</label>
+        <select name="from" required>
+            {{range .Units}}
+                <option value="{{.Value}}">
+                    {{.Label}}
+                </option>
+            {{end}}
+        </select>
+    </div>
+
+    <div>
+        <label>Unit to Convert To</label>
+        <select name="to" required>
+            {{range .Units}}
+                <option value="{{.Value}}">
+                    {{.Label}}
+                </option>
+            {{end}}
+        </select>
+    </div>
+
+    <button type="submit">Convert</button>
+
+</form>
+
+{{end}}
+
+{{end}}
