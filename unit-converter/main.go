@@ -1,18 +1,25 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
+)
+
+const (
+	UnitTypeLength      = "length"
+	UnitTypeWeight      = "weight"
+	UnitTypeTemperature = "temperature"
 )
 
 type PageData struct {
-	Category string
-	Value    float64
-	From     string
-	To       string
-	Result   float64
+	Value  float64
+	From   string
+	To     string
+	Result float64
 }
 
 func formatFloat(f float64) string {
@@ -25,165 +32,87 @@ var templates = template.Must(
 			"format": formatFloat,
 		}).
 		ParseFiles(
-			"tmpl/length.html",
-			"tmpl/weight.html",
-			"tmpl/temperature.html",
+			"tmpl/"+UnitTypeLength+".html",
+			"tmpl/"+UnitTypeWeight+".html",
+			"tmpl/"+UnitTypeTemperature+".html",
 		),
 )
 
 func renderTemplate(w http.ResponseWriter, tmpl string, data *PageData) {
-	err := templates.ExecuteTemplate(w, tmpl+".html", data)
-	if err != nil {
+	if err := templates.ExecuteTemplate(w, tmpl+".html", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/length", http.StatusFound)
+	http.Redirect(w, r, "/"+UnitTypeLength, http.StatusFound)
 }
 
-func lengthHandler(w http.ResponseWriter, r *http.Request) {
+func unitHandler(w http.ResponseWriter, r *http.Request) {
+	unitType := strings.TrimPrefix(r.URL.Path, "/")
+	switch unitType {
+	case UnitTypeLength, UnitTypeWeight, UnitTypeTemperature:
+		// valid
+	default:
+		http.NotFound(w, r)
+		return
+	}
+
 	switch r.Method {
 	case http.MethodGet:
-		// Parses only length.html into a new template set on every request.
-		// t, err := template.ParseFiles("length.html")
-
-		// Creates a new template set (named ""), registers custom functions,
-		// then parses length.html into that template set.
-		// t := template.Must(template.New("").Funcs(template.FuncMap{"format": formatFloat}).ParseFiles("length.html"))
-
-		// Executes the already parsed template named "length.html"
-		// from the global template set.
-		// err := templates.ExecuteTemplate(w, "length.html", nil)
-
-		// Wrapper around ExecuteTemplate that also handles errors.
-		renderTemplate(w, "length", nil)
-
+		renderTemplate(w, unitType, nil)
 	case http.MethodPost:
-		if err := r.ParseForm(); err != nil {
-			http.Error(w, "Bad request", http.StatusBadRequest)
-			return
-		}
-
-		category := r.FormValue("category")
-		valueStr := r.FormValue("value")
-		from := r.FormValue("from")
-		to := r.FormValue("to")
-
-		value, err := strconv.ParseFloat(valueStr, 64)
-		if err != nil {
-			http.Error(w, "Invalid number", http.StatusBadRequest)
-			return
-		}
-
-		result := convert(category, value, from, to)
-		data := &PageData{
-			Category: category,
-			Value:    value,
-			From:     from,
-			To:       to,
-			Result:   result,
-		}
-
-		renderTemplate(w, "length", data)
-
+		processConversion(w, r, unitType)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
 }
 
-func weightHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		renderTemplate(w, "weight", nil)
-
-	case http.MethodPost:
-		if err := r.ParseForm(); err != nil {
-			http.Error(w, "Bad request", http.StatusBadRequest)
-			return
-		}
-
-		category := r.FormValue("category")
-		valueStr := r.FormValue("value")
-		from := r.FormValue("from")
-		to := r.FormValue("to")
-
-		value, err := strconv.ParseFloat(valueStr, 64)
-		if err != nil {
-			http.Error(w, "Invalid number", http.StatusBadRequest)
-			return
-		}
-
-		result := convert(category, value, from, to)
-		data := &PageData{
-			Category: category,
-			Value:    value,
-			From:     from,
-			To:       to,
-			Result:   result,
-		}
-
-		renderTemplate(w, "weight", data)
-
-	default:
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+func processConversion(w http.ResponseWriter, r *http.Request, unitType string) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
 	}
+
+	valueStr := r.FormValue("value")
+	from := r.FormValue("from")
+	to := r.FormValue("to")
+
+	value, err := strconv.ParseFloat(valueStr, 64)
+	if err != nil {
+		http.Error(w, "Invalid number", http.StatusBadRequest)
+		return
+	}
+
+	result, err := convert(unitType, value, from, to)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	data := &PageData{
+		Value:  value,
+		From:   from,
+		To:     to,
+		Result: result,
+	}
+
+	renderTemplate(w, unitType, data)
 }
 
-func temperatureHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		renderTemplate(w, "temperature", nil)
-
-	case http.MethodPost:
-		if err := r.ParseForm(); err != nil {
-			http.Error(w, "Bad request", http.StatusBadRequest)
-			return
-		}
-
-		category := r.FormValue("category")
-		valueStr := r.FormValue("value")
-		from := r.FormValue("from")
-		to := r.FormValue("to")
-
-		value, err := strconv.ParseFloat(valueStr, 64)
-		if err != nil {
-			http.Error(w, "Invalid number", http.StatusBadRequest)
-			return
-		}
-
-		result := convert(category, value, from, to)
-		data := &PageData{
-			Category: category,
-			Value:    value,
-			From:     from,
-			To:       to,
-			Result:   result,
-		}
-
-		renderTemplate(w, "temperature", data)
-
-	default:
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	}
-}
-
-func convert(cat string, value float64, from, to string) float64 {
+func convert(unitType string, value float64, from, to string) (float64, error) {
 	if from == to {
-		return value
+		return value, nil
 	}
-
-	switch cat {
-	case "length":
-		return convertLength(value, from, to)
-	case "weight":
-		return convertWeight(value, from, to)
-	case "temperature":
-		return convertTemperature(value, from, to)
+	switch unitType {
+	case UnitTypeLength:
+		return convertLength(value, from, to), nil
+	case UnitTypeWeight:
+		return convertWeight(value, from, to), nil
+	case UnitTypeTemperature:
+		return convertTemperature(value, from, to), nil
 	default:
-		panic("unknown category")
+		return 0, fmt.Errorf("unknown unit type: %q", unitType)
 	}
-
 }
 
 func convertLength(value float64, from, to string) float64 {
@@ -253,7 +182,6 @@ func toGrams(value float64, unit string) float64 {
 	case "lb":
 		return value * 453.592
 	}
-
 	return value
 }
 
@@ -270,7 +198,6 @@ func fromGrams(value float64, unit string) float64 {
 	case "lb":
 		return value / 453.592
 	}
-
 	return value
 }
 
@@ -288,7 +215,6 @@ func toCelsius(value float64, unit string) float64 {
 	case "k":
 		return value - 273.15
 	}
-
 	return value
 }
 
@@ -301,14 +227,13 @@ func fromCelsius(value float64, unit string) float64 {
 	case "k":
 		return value + 273.15
 	}
-
 	return value
 }
 
 func main() {
 	http.HandleFunc("/", rootHandler)
-	http.HandleFunc("/length", lengthHandler)
-	http.HandleFunc("/weight", weightHandler)
-	http.HandleFunc("/temperature", temperatureHandler)
+	http.HandleFunc("/"+UnitTypeLength, unitHandler)
+	http.HandleFunc("/"+UnitTypeWeight, unitHandler)
+	http.HandleFunc("/"+UnitTypeTemperature, unitHandler)
 	log.Fatal(http.ListenAndServe("localhost:8080", nil))
 }
