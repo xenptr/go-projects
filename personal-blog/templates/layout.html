@@ -1,0 +1,57 @@
+{{define "layout"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Blog</title>
+
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+
+<header>
+
+    <div class="container nav">
+
+        <h1>
+            <a href="/">Personal Blog</a>
+        </h1>
+
+        <!-- <nav>
+
+            <a href="/">Home</a>
+
+            {{if .}} /*if .Admin*/
+            <a href="/admin">Dashboard</a>
+            <a href="/logout">Logout</a>
+            {{else}}
+            <a href="/login">Admin</a>
+            {{end}}
+
+        </nav> -->
+
+    </div>
+
+</header>
+
+<main class="container">
+
+    {{template "content" .}}
+
+</main>
+
+<footer>
+
+    <div class="container">
+
+        © 2026 Personal Blog
+
+    </div>
+
+</footer>
+
+</body>
+</html>
+{{end}}

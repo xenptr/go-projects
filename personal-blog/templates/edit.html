@@ -1,0 +1,23 @@
+{{define "content"}}
+
+<h2>Edit Article</h2>
+
+<form action="/admin/edit/{{.ID}}" method="POST" class="editor">
+
+    <label>Title</label>
+
+    <input type="text" name="title" value="{{.Title}}" required>
+
+    <label>Date</label>
+
+    <input type="date" name="published_at" value="{{inputDate .PublishedAt}}" required>
+
+    <label>Content</label>
+
+    <textarea name="content" rows="18" required>{{.Content}}</textarea>
+
+    <button class="btn">Update Article</button>
+
+</form>
+
+{{end}}

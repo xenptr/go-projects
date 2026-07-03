@@ -1,0 +1,27 @@
+{{define "content"}}
+
+<h2>Latest Articles</h2>
+
+<div class="article-list">
+
+    {{range .Articles}}
+
+    <article class="card">
+
+        <a href="/article/{{.ID}}">
+            <h3>{{.Title}}</h3>
+        </a>
+
+        <p class="date">{{formatDate .PublishedAt}}</p>
+
+        <!-- <p>{{/* .Preview */}}</p> -->
+
+        <a class="btn" href="/article/{{.ID}}">Read More</a>
+
+    </article>
+
+    {{end}}
+
+</div>
+
+{{end}}

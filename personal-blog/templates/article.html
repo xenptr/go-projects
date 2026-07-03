@@ -1,0 +1,17 @@
+{{define "content"}}
+
+<article class="post">
+
+    <h1>{{.Title}}</h1>
+
+    <p class="date">{{formatDate .PublishedAt}}</p>
+
+    <div class="content">
+
+        {{.Content}}
+
+    </div>
+
+</article>
+
+{{end}}

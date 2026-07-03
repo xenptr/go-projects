@@ -1,0 +1,6 @@
+{
+  "id": 5,
+  "title": "Go Templates Explained",
+  "published_at": "2026-07-02T08:20:00Z",
+  "content": "The html/template package allows you to create dynamic HTML pages by combining templates with Go data structures safely and efficiently."
+}

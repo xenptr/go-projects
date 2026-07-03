@@ -1,0 +1,410 @@
+/* ===========================
+   Google Font
+=========================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+/* ===========================
+   Reset
+=========================== */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
+body{
+    font-family:'Poppins',sans-serif;
+    background:#f5f7fb;
+    color:#222;
+    line-height:1.7;
+}
+
+/* ===========================
+   Links
+=========================== */
+
+a{
+    text-decoration:none;
+    color:inherit;
+}
+
+img{
+    max-width:100%;
+}
+
+/* ===========================
+   Layout
+=========================== */
+
+.container{
+    width:min(1100px,90%);
+    margin:auto;
+}
+
+/* ===========================
+   Header
+=========================== */
+
+header{
+    background:#fff;
+    box-shadow:0 2px 10px rgba(0,0,0,.08);
+    margin-bottom:40px;
+}
+
+.nav{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:20px 0;
+}
+
+.nav h1{
+    font-size:1.8rem;
+    color:#2563eb;
+}
+
+nav{
+    display:flex;
+    gap:18px;
+}
+
+nav a{
+    color:#555;
+    font-weight:500;
+    transition:.25s;
+}
+
+nav a:hover{
+    color:#2563eb;
+}
+
+/* ===========================
+   Footer
+=========================== */
+
+footer{
+    margin-top:80px;
+    padding:30px 0;
+    text-align:center;
+    color:#777;
+}
+
+/* ===========================
+   Headings
+=========================== */
+
+h1{
+    margin-bottom:10px;
+}
+
+h2{
+    margin-bottom:30px;
+    font-size:2rem;
+}
+
+h3{
+    margin-bottom:10px;
+}
+
+/* ===========================
+   Article Grid
+=========================== */
+
+.article-list{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+    gap:25px;
+}
+
+/* ===========================
+   Cards
+=========================== */
+
+.card{
+    background:#fff;
+    border-radius:12px;
+    padding:25px;
+    box-shadow:0 8px 20px rgba(0,0,0,.08);
+    transition:.25s;
+}
+
+.card:hover{
+    transform:translateY(-6px);
+}
+
+.card h3{
+    color:#2563eb;
+}
+
+.card p{
+    margin:12px 0;
+}
+
+.date{
+    color:#777;
+    font-size:.9rem;
+}
+
+/* ===========================
+   Buttons
+=========================== */
+
+.btn{
+    display:inline-block;
+    margin-top:15px;
+    padding:11px 22px;
+    background:#2563eb;
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    transition:.25s;
+    font-size:.95rem;
+}
+
+.btn:hover{
+    background:#1d4ed8;
+}
+
+.danger{
+    color:#dc2626;
+    font-weight:500;
+}
+
+.danger:hover{
+    text-decoration:underline;
+}
+
+/* ===========================
+   Article Page
+=========================== */
+
+.post{
+    background:#fff;
+    padding:45px;
+    border-radius:12px;
+    box-shadow:0 8px 20px rgba(0,0,0,.08);
+}
+
+.post h1{
+    margin-bottom:15px;
+}
+
+.post .date{
+    margin-bottom:30px;
+}
+
+.content{
+    white-space:pre-wrap;
+    font-size:1.05rem;
+}
+
+.content p{
+    margin-bottom:18px;
+}
+
+/* ===========================
+   Login
+=========================== */
+
+.login-box{
+    max-width:450px;
+    margin:60px auto;
+    background:#fff;
+    padding:40px;
+    border-radius:12px;
+    box-shadow:0 10px 30px rgba(0,0,0,.08);
+}
+
+.login-box h2{
+    text-align:center;
+}
+
+/* ===========================
+   Forms
+=========================== */
+
+form{
+    display:flex;
+    flex-direction:column;
+}
+
+label{
+    margin-top:18px;
+    margin-bottom:6px;
+    font-weight:600;
+}
+
+input,
+textarea{
+    width:100%;
+    padding:12px;
+    border:1px solid #ddd;
+    border-radius:8px;
+    font-family:inherit;
+    font-size:1rem;
+    transition:.25s;
+}
+
+input:focus,
+textarea:focus{
+    outline:none;
+    border-color:#2563eb;
+    box-shadow:0 0 0 3px rgba(37,99,235,.15);
+}
+
+textarea{
+    resize:vertical;
+}
+
+.editor{
+    background:#fff;
+    padding:35px;
+    border-radius:12px;
+    box-shadow:0 8px 20px rgba(0,0,0,.08);
+}
+
+/* ===========================
+   Dashboard
+=========================== */
+
+.dashboard-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:25px;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:#fff;
+    border-radius:12px;
+    overflow:hidden;
+    box-shadow:0 8px 20px rgba(0,0,0,.08);
+}
+
+thead{
+    background:#2563eb;
+    color:#fff;
+}
+
+th,
+td{
+    padding:16px;
+    text-align:left;
+}
+
+tbody tr:nth-child(even){
+    background:#f7f7f7;
+}
+
+tbody tr:hover{
+    background:#eef4ff;
+}
+
+td a{
+    color:#2563eb;
+    font-weight:500;
+}
+
+/* ===========================
+   404
+=========================== */
+
+.not-found{
+    text-align:center;
+    padding:120px 20px;
+}
+
+.not-found h1{
+    font-size:6rem;
+    color:#2563eb;
+}
+
+.not-found p{
+    margin:20px 0;
+    color:#666;
+}
+
+/* ===========================
+   Utility
+=========================== */
+
+.text-center{
+    text-align:center;
+}
+
+.mt-1{margin-top:10px;}
+.mt-2{margin-top:20px;}
+.mt-3{margin-top:30px;}
+.mt-4{margin-top:40px;}
+
+.mb-1{margin-bottom:10px;}
+.mb-2{margin-bottom:20px;}
+.mb-3{margin-bottom:30px;}
+.mb-4{margin-bottom:40px;}
+
+/* ===========================
+   Responsive
+=========================== */
+
+@media(max-width:768px){
+
+    .nav{
+        flex-direction:column;
+        gap:20px;
+    }
+
+    nav{
+        flex-wrap:wrap;
+        justify-content:center;
+    }
+
+    .dashboard-header{
+        flex-direction:column;
+        align-items:flex-start;
+        gap:15px;
+    }
+
+    table{
+        display:block;
+        overflow-x:auto;
+    }
+
+    .post{
+        padding:25px;
+    }
+
+    .editor{
+        padding:25px;
+    }
+
+    .login-box{
+        padding:30px;
+    }
+
+}
+
+@media(max-width:480px){
+
+    h2{
+        font-size:1.6rem;
+    }
+
+    .article-list{
+        grid-template-columns:1fr;
+    }
+
+    .btn{
+        width:100%;
+        text-align:center;
+    }
+
+}

@@ -1,0 +1,55 @@
+{{define "content"}}
+
+<div class="dashboard-header">
+
+    <h2>Dashboard</h2>
+
+    <a class="btn" href="/admin/new">New Article</a>
+
+</div>
+
+<table>
+
+    <thead>
+
+        <tr>
+
+            <th>Title</th>
+            <th>Date</th>
+            <th>Actions</th>
+
+        </tr>
+
+    </thead>
+
+    <tbody>
+
+        {{range .Articles}}
+
+        <tr>
+
+            <td>{{.Title}}</td>
+
+            <td>{{formatDate .PublishedAt}}</td>
+
+            <td>
+
+                <a href="/admin/edit/{{.ID}}">Edit</a>
+
+                |
+
+                <form action="/admin/delete/{{.ID}}" method="POST" style="display:inline;">
+                    <button type="submit" class="danger">Delete</button>
+                </form>
+
+            </td>
+
+        </tr>
+
+        {{end}}
+
+    </tbody>
+
+</table>
+
+{{end}}

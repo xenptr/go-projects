@@ -1,0 +1,6 @@
+{
+  "id": 3,
+  "title": "Working with JSON in Go",
+  "published_at": "2026-06-25T11:00:00Z",
+  "content": "The encoding/json package provides functions to encode Go structs into JSON and decode JSON into Go structs using Marshal and Unmarshal."
+}

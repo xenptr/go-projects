@@ -1,0 +1,23 @@
+{{define "content"}}
+
+<div class="login-box">
+
+    <h2>Admin Login</h2>
+
+    <form action="/login" method="POST">
+
+        <label>Username</label>
+
+        <input type="text" name="username" required>
+
+        <label>Password</label>
+
+        <input type="password" name="password" required>
+
+        <button class="btn">Login</button>
+
+    </form>
+
+</div>
+
+{{end}}
