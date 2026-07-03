@@ -22,6 +22,10 @@ Projects are organized into separate directories, each with its own source code 
    A CLI game where the computer picks a number between 1 and 100 and you have to guess it. Choose a difficulty level, get proximity hints, and track your best score across multiple rounds.
    Project URL: https://roadmap.sh/projects/number-guessing-game
 
+5. **Unit Converter**
+   A web-based unit converter served by Go's standard library. Converts between units of length, weight, and temperature through a browser UI with no external dependencies.
+   Project URL: https://roadmap.sh/projects/unit-converter
+
 ## More Projects
 
 Additional projects will be added as I progress through the roadmap.
