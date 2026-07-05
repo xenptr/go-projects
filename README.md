@@ -26,6 +26,10 @@ Projects are organized into separate directories, each with its own source code 
    A web-based unit converter served by Go's standard library. Converts between units of length, weight, and temperature through a browser UI with no external dependencies.
    Project URL: https://roadmap.sh/projects/unit-converter
 
+6. **Personal Blog**
+   A web-based personal blog with a public reading section and a password-protected admin dashboard to create, edit, and delete articles. Built entirely with Go's standard library, no external dependencies.
+   Project URL: https://roadmap.sh/projects/personal-blog
+
 ## More Projects
 
 Additional projects will be added as I progress through the roadmap.
