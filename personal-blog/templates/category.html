@@ -2,29 +2,17 @@
 
 <div class="home-layout">
 
-    <!-- Main feed -->
     <section class="feed">
-        <h2>Latest Articles</h2>
+        <h2>Category: <span class="category-badge">{{.Filter}}</span></h2>
 
         {{if .Articles}}
-        <div class="article-list">
+        <div class="article-list mt-3">
             {{range .Articles}}
             <article class="card">
                 <a href="/article/{{.ID}}">
                     <h3>{{.Title}}</h3>
                 </a>
-
                 <p class="date">{{formatDate .PublishedAt}}</p>
-
-                {{if .Preview}}
-                <p class="preview">{{.Preview}}</p>
-                {{end}}
-
-                {{if .Category}}
-                <p class="meta">
-                    <a class="category-badge" href="/category/{{.Category}}">{{.Category}}</a>
-                </p>
-                {{end}}
 
                 {{if .Tags}}
                 <p class="tags">
@@ -37,26 +25,24 @@
             {{end}}
         </div>
         {{else}}
-        <p class="empty">No articles yet. Check back soon!</p>
+        <p class="empty">No articles in this category.</p>
         {{end}}
     </section>
 
-    <!-- Sidebar -->
     <aside class="sidebar">
-
-        {{$cats := uniqueCategories .Articles}}
+        {{$cats := uniqueCategories .Blog.Articles}}
         {{if $cats}}
         <div class="widget">
-            <h4>Categories</h4>
+            <h4>All Categories</h4>
             <ul class="widget-list">
                 {{range $cats}}
-                <li><a href="/category/{{.}}">{{.}}</a></li>
+                <li><a href="/category/{{.}}" {{if eq . $.Filter}}class="active"{{end}}>{{.}}</a></li>
                 {{end}}
             </ul>
         </div>
         {{end}}
 
-        {{$tags := uniqueTags .Articles}}
+        {{$tags := uniqueTags .Blog.Articles}}
         {{if $tags}}
         <div class="widget">
             <h4>Tags</h4>
@@ -65,7 +51,6 @@
             </div>
         </div>
         {{end}}
-
     </aside>
 
 </div>

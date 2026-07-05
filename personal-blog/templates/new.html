@@ -5,15 +5,18 @@
 <form action="/admin/new" method="POST" class="editor">
 
     <label>Title</label>
-
-    <input type="text" name="title" required>
+    <input type="text" name="title" maxlength="200" required>
 
     <label>Date</label>
-
     <input type="date" name="published_at" required>
 
-    <label>Content</label>
+    <label>Category</label>
+    <input type="text" name="category" maxlength="80" placeholder="e.g. Technology">
 
+    <label>Tags <span class="hint">(comma-separated)</span></label>
+    <input type="text" name="tags" maxlength="300" placeholder="e.g. go, web, tutorial">
+
+    <label>Content</label>
     <textarea name="content" rows="18" required></textarea>
 
     <button class="btn">Publish</button>

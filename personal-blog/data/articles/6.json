@@ -1,0 +1,30 @@
+{
+  "id": 6,
+  "title": "Building a Personal Blog in Go",
+  "published_at": "2026-07-05T00:00:00Z",
+  "content": "A personal blog is an excellent project for learning backend development.\r\n\r\nThis project demonstrates how to:\r\n\r\n- Read and write JSON files\r\n- Render HTML templates\r\n- Build CRUD operations\r\n- Parse forms\r\n- Serve static assets\r\n- Organize Go packages\r\n\r\nInstead of using a database, articles are stored inside a JSON file, making the project easier to understand while still covering real-world concepts.\r\n\r\nFuture improvements include authentication, Markdown support, pagination, search, syntax highlighting, and image uploads.",
+  "category": "Web Development",
+  "tags": [
+    "golang",
+    "templates",
+    "json",
+    "blog",
+    "crud"
+  ],
+  "comments": [
+    {
+      "id": 1,
+      "article_id": 6,
+      "author": "Rahul Sharma",
+      "body": "Really enjoyed this article. The explanation of handlers and ServeMux was easy to follow. Looking forward to more Go tutorials!",
+      "created_at": "2026-07-05T10:21:32.988810764Z"
+    },
+    {
+      "id": 2,
+      "article_id": 6,
+      "author": "Priya Patel",
+      "body": "Great write-up! It would be awesome if the next post covered middleware and authentication using only the Go standard library.",
+      "created_at": "2026-07-05T10:21:40.888112988Z"
+    }
+  ]
+}

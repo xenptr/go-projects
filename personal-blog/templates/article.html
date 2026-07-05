@@ -6,12 +6,64 @@
 
     <p class="date">{{formatDate .PublishedAt}}</p>
 
+    {{if .Category}}
+    <p class="meta">
+        Category: <a class="category-badge" href="/category/{{.Category}}">{{.Category}}</a>
+    </p>
+    {{end}}
+
+    {{if .Tags}}
+    <p class="tags">
+        {{range .Tags}}<a class="tag" href="/tag/{{.}}">{{.}}</a>{{end}}
+    </p>
+    {{end}}
+
     <div class="content">
-
         {{.Content}}
-
     </div>
 
 </article>
+
+<!-- ───── Comments ───── -->
+<section class="comments" id="comments">
+
+    <h3>Comments ({{len .Comments}})</h3>
+
+    {{if .Comments}}
+    <div class="comment-list">
+        {{range .Comments}}
+        <div class="comment">
+            <div class="comment-meta">
+                <strong>{{.Author}}</strong>
+                <span class="date">{{formatDate .CreatedAt}}</span>
+            </div>
+            <p>{{.Body}}</p>
+        </div>
+        {{end}}
+    </div>
+    {{else}}
+    <p class="empty">No comments yet. Be the first!</p>
+    {{end}}
+
+    <!-- New comment form -->
+    <div class="comment-form">
+        <h4>Leave a Comment</h4>
+
+        {{if .CommentError}}
+        <p class="form-error">{{.CommentError}}</p>
+        {{end}}
+
+        <form action="/article/{{.ID}}/comment" method="POST">
+            <label for="author">Name</label>
+            <input type="text" id="author" name="author" maxlength="100" required>
+
+            <label for="body">Comment</label>
+            <textarea id="body" name="body" rows="5" maxlength="2000" required></textarea>
+
+            <button class="btn">Post Comment</button>
+        </form>
+    </div>
+
+</section>
 
 {{end}}

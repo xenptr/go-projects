@@ -2,5 +2,8 @@
   "id": 4,
   "title": "Building a Personal Blog",
   "published_at": "2026-06-30T18:45:00Z",
-  "content": "A personal blog project is a great way to learn file handling, templates, routing, and CRUD operations while building something practical."
+  "content": "A personal blog project is a great way to learn file handling, templates, routing, and CRUD operations while building something practical.",
+  "category": "Projects",
+  "tags": ["go", "web", "tutorial"],
+  "comments": []
 }

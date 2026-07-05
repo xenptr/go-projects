@@ -1,0 +1,46 @@
+{{define "content"}}
+
+<h2>Search</h2>
+
+<form class="search-form" action="/search" method="GET">
+    <input type="search" name="q" value="{{.Query}}" placeholder="Search articles…" aria-label="Search articles" autofocus>
+    <button type="submit" class="btn">Search</button>
+</form>
+
+{{if .Query}}
+
+    {{if .Articles}}
+    <p class="results-count">{{len .Articles}} result{{if gt (len .Articles) 1}}s{{end}} for <strong>"{{.Query}}"</strong></p>
+
+    <div class="article-list mt-3">
+        {{range .Articles}}
+        <article class="card">
+            <a href="/article/{{.ID}}">
+                <h3>{{.Title}}</h3>
+            </a>
+            <p class="date">{{formatDate .PublishedAt}}</p>
+
+            {{if .Category}}
+            <p class="meta">
+                <a class="category-badge" href="/category/{{.Category}}">{{.Category}}</a>
+            </p>
+            {{end}}
+
+            {{if .Tags}}
+            <p class="tags">
+                {{range .Tags}}<a class="tag" href="/tag/{{.}}">{{.}}</a>{{end}}
+            </p>
+            {{end}}
+
+            <a class="btn" href="/article/{{.ID}}">Read More</a>
+        </article>
+        {{end}}
+    </div>
+
+    {{else}}
+    <p class="empty">No articles found for <strong>"{{.Query}}"</strong>.</p>
+    {{end}}
+
+{{end}}
+
+{{end}}

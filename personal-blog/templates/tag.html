@@ -2,23 +2,17 @@
 
 <div class="home-layout">
 
-    <!-- Main feed -->
     <section class="feed">
-        <h2>Latest Articles</h2>
+        <h2>Tag: <span class="tag">{{.Filter}}</span></h2>
 
         {{if .Articles}}
-        <div class="article-list">
+        <div class="article-list mt-3">
             {{range .Articles}}
             <article class="card">
                 <a href="/article/{{.ID}}">
                     <h3>{{.Title}}</h3>
                 </a>
-
                 <p class="date">{{formatDate .PublishedAt}}</p>
-
-                {{if .Preview}}
-                <p class="preview">{{.Preview}}</p>
-                {{end}}
 
                 {{if .Category}}
                 <p class="meta">
@@ -37,14 +31,12 @@
             {{end}}
         </div>
         {{else}}
-        <p class="empty">No articles yet. Check back soon!</p>
+        <p class="empty">No articles with this tag.</p>
         {{end}}
     </section>
 
-    <!-- Sidebar -->
     <aside class="sidebar">
-
-        {{$cats := uniqueCategories .Articles}}
+        {{$cats := uniqueCategories .Blog.Articles}}
         {{if $cats}}
         <div class="widget">
             <h4>Categories</h4>
@@ -56,16 +48,15 @@
         </div>
         {{end}}
 
-        {{$tags := uniqueTags .Articles}}
+        {{$tags := uniqueTags .Blog.Articles}}
         {{if $tags}}
         <div class="widget">
-            <h4>Tags</h4>
+            <h4>All Tags</h4>
             <div class="tags">
-                {{range $tags}}<a class="tag" href="/tag/{{.}}">{{.}}</a>{{end}}
+                {{range $tags}}<a class="tag" href="/tag/{{.}}" {{if eq . $.Filter}}class="active"{{end}}>{{.}}</a>{{end}}
             </div>
         </div>
         {{end}}
-
     </aside>
 
 </div>

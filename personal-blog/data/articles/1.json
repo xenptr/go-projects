@@ -2,5 +2,8 @@
   "id": 1,
   "title": "Getting Started with Go",
   "published_at": "2026-06-15T09:30:00Z",
-  "content": "Go is a simple, fast, and statically typed programming language developed by Google. It is designed for building reliable and efficient software."
+  "content": "Go is a simple, fast, and statically typed programming language developed by Google. It is designed for building reliable and efficient software.",
+  "category": "Go",
+  "tags": ["go", "beginner"],
+  "comments": []
 }

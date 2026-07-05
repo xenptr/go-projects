@@ -2,5 +2,8 @@
   "id": 2,
   "title": "Understanding HTTP Handlers",
   "published_at": "2026-06-20T14:15:00Z",
-  "content": "An HTTP handler processes incoming requests and writes responses back to the client. In Go, handlers implement the http.Handler interface or use http.HandlerFunc."
+  "content": "An HTTP handler processes incoming requests and writes responses back to the client. In Go, handlers implement the http.Handler interface or use http.HandlerFunc.",
+  "category": "Go",
+  "tags": ["go", "http", "web"],
+  "comments": []
 }

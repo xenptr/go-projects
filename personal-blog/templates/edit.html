@@ -5,15 +5,18 @@
 <form action="/admin/edit/{{.ID}}" method="POST" class="editor">
 
     <label>Title</label>
-
-    <input type="text" name="title" value="{{.Title}}" required>
+    <input type="text" name="title" value="{{.Title}}" maxlength="200" required>
 
     <label>Date</label>
-
     <input type="date" name="published_at" value="{{inputDate .PublishedAt}}" required>
 
-    <label>Content</label>
+    <label>Category</label>
+    <input type="text" name="category" value="{{.Category}}" maxlength="80" placeholder="e.g. Technology">
 
+    <label>Tags <span class="hint">(comma-separated)</span></label>
+    <input type="text" name="tags" value="{{joinTags .Tags}}" maxlength="300" placeholder="e.g. go, web, tutorial">
+
+    <label>Content</label>
     <textarea name="content" rows="18" required>{{.Content}}</textarea>
 
     <button class="btn">Update Article</button>

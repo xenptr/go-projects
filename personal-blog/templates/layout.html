@@ -5,51 +5,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Personal Blog</title>
-
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 
 <body>
 
 <header>
-
     <div class="container nav">
-
         <h1>
             <a href="/">Personal Blog</a>
         </h1>
 
-        <!-- <nav>
-
+        <nav>
             <a href="/">Home</a>
-
-            {{if .}} /*if .Admin*/
+            <a href="/search">Search</a>
             <a href="/admin">Dashboard</a>
-            <a href="/logout">Logout</a>
-            {{else}}
-            <a href="/login">Admin</a>
-            {{end}}
-
-        </nav> -->
-
+        </nav>
     </div>
 
+    <div class="container search-bar-wrap">
+        <form class="search-bar" action="/search" method="GET">
+            <input type="search" name="q" placeholder="Search articles…" aria-label="Search articles">
+            <button type="submit" class="btn btn-sm">Search</button>
+        </form>
+    </div>
 </header>
 
 <main class="container">
-
     {{template "content" .}}
-
 </main>
 
 <footer>
-
     <div class="container">
-
         © 2026 Personal Blog
-
     </div>
-
 </footer>
 
 </body>

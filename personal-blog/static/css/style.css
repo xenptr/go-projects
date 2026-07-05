@@ -173,11 +173,19 @@ h3{
 }
 
 .danger{
+    background:none;
+    border:none;
+    padding:0;
+    margin:0;
     color:#dc2626;
+    font:inherit;
     font-weight:500;
+    cursor:pointer;
+    transition:.2s;
 }
 
 .danger:hover{
+    color:#b91c1c;
     text-decoration:underline;
 }
 
@@ -407,4 +415,278 @@ td a{
         text-align:center;
     }
 
+}
+
+/* ===========================
+   Header search bar
+=========================== */
+
+.search-bar-wrap{
+    padding-bottom:14px;
+}
+
+.search-bar{
+    display:flex;
+    flex-direction:row;
+    gap:8px;
+    max-width:560px;
+}
+
+.search-bar input{
+    flex:1;
+    margin:0;
+}
+
+.btn-sm{
+    margin-top:0;
+    padding:10px 16px;
+    font-size:.88rem;
+}
+
+/* ===========================
+   Search page
+=========================== */
+
+.search-form{
+    display:flex;
+    flex-direction:row;
+    gap:10px;
+    max-width:600px;
+    margin-bottom:30px;
+}
+
+.search-form input{
+    flex:1;
+    margin:0;
+}
+
+.search-form .btn{
+    margin-top:0;
+}
+
+.results-count{
+    color:#555;
+    margin-bottom:10px;
+}
+
+/* ===========================
+   Home / Category / Tag layout
+=========================== */
+
+.home-layout{
+    display:grid;
+    grid-template-columns:1fr 260px;
+    gap:40px;
+    align-items:start;
+}
+
+.feed h2{
+    margin-bottom:24px;
+}
+
+/* ===========================
+   Sidebar widgets
+=========================== */
+
+.sidebar{
+    display:flex;
+    flex-direction:column;
+    gap:24px;
+}
+
+.widget{
+    background:#fff;
+    border-radius:12px;
+    padding:22px 24px;
+    box-shadow:0 8px 20px rgba(0,0,0,.08);
+}
+
+.widget h4{
+    font-size:1rem;
+    margin-bottom:14px;
+    color:#2563eb;
+}
+
+.widget-list{
+    list-style:none;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+}
+
+.widget-list a{
+    color:#444;
+    font-weight:500;
+    transition:.2s;
+}
+
+.widget-list a:hover,
+.widget-list a.active{
+    color:#2563eb;
+}
+
+/* ===========================
+   Category badge
+=========================== */
+
+.category-badge{
+    display:inline-block;
+    background:#dbeafe;
+    color:#1d4ed8;
+    font-size:.78rem;
+    font-weight:600;
+    padding:3px 10px;
+    border-radius:20px;
+    transition:.2s;
+}
+
+.category-badge:hover{
+    background:#bfdbfe;
+}
+
+/* ===========================
+   Tags
+=========================== */
+
+.tags{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin:8px 0;
+}
+
+.tag{
+    display:inline-block;
+    background:#f1f5f9;
+    color:#475569;
+    font-size:.78rem;
+    font-weight:500;
+    padding:3px 10px;
+    border-radius:20px;
+    transition:.2s;
+}
+
+.tag:hover,
+.tag.active{
+    background:#e2e8f0;
+    color:#1e293b;
+}
+
+.meta{
+    margin:6px 0;
+}
+
+/* ===========================
+   Comments
+=========================== */
+
+.comments{
+    margin-top:50px;
+}
+
+.comments h3{
+    font-size:1.4rem;
+    margin-bottom:24px;
+    color:#1e293b;
+}
+
+.comment-list{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    margin-bottom:36px;
+}
+
+.comment{
+    background:#fff;
+    border-radius:10px;
+    padding:20px 24px;
+    box-shadow:0 4px 14px rgba(0,0,0,.07);
+}
+
+.comment-meta{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+    flex-wrap:wrap;
+    gap:6px;
+}
+
+.comment-meta strong{
+    color:#2563eb;
+}
+
+.comment-form{
+    background:#fff;
+    border-radius:12px;
+    padding:32px;
+    box-shadow:0 8px 20px rgba(0,0,0,.08);
+    margin-top:16px;
+}
+
+.comment-form h4{
+    font-size:1.1rem;
+    margin-bottom:6px;
+    color:#1e293b;
+}
+
+.form-error{
+    background:#fee2e2;
+    color:#b91c1c;
+    border-radius:8px;
+    padding:10px 14px;
+    margin-bottom:12px;
+    font-size:.92rem;
+}
+
+/* ===========================
+   Empty state
+=========================== */
+
+.empty{
+    color:#888;
+    padding:20px 0;
+}
+
+/* ===========================
+   Form hint
+=========================== */
+
+.hint{
+    font-weight:400;
+    color:#888;
+    font-size:.85rem;
+}
+
+/* ===========================
+   Responsive – sidebar
+=========================== */
+
+@media(max-width:900px){
+    .home-layout{
+        grid-template-columns:1fr;
+    }
+
+    .sidebar{
+        flex-direction:row;
+        flex-wrap:wrap;
+    }
+
+    .widget{
+        flex:1 1 220px;
+    }
+}
+
+@media(max-width:768px){
+    .search-bar,
+    .search-form{
+        flex-direction:column;
+    }
+
+    .search-bar .btn,
+    .search-form .btn{
+        width:100%;
+        text-align:center;
+    }
 }
