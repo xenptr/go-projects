@@ -30,6 +30,10 @@ Projects are organized into separate directories, each with its own source code 
    A web-based personal blog with a public reading section and a password-protected admin dashboard to create, edit, and delete articles. Built entirely with Go's standard library, no external dependencies.
    Project URL: https://roadmap.sh/projects/personal-blog
 
+7. **Weather API**
+   An HTTP API that returns weather data for a given city using the Visual Crossing API. Responses are cached in Redis for 12 hours and there's a per-IP rate limiter built in.
+   Project URL: https://roadmap.sh/projects/weather-api-wrapper-service
+
 ## More Projects
 
 Additional projects will be added as I progress through the roadmap.
