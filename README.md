@@ -34,6 +34,10 @@ Projects are organized into separate directories, each with its own source code 
    An HTTP API that returns weather data for a given city using the Visual Crossing API. Responses are cached in Redis for 12 hours and there's a per-IP rate limiter built in.
    Project URL: https://roadmap.sh/projects/weather-api-wrapper-service
 
+8. **Blogging Platform API**
+   A RESTful JSON API for managing blog posts backed by PostgreSQL. Full CRUD on posts plus a keyword search across title, content, category, and tags.
+   Project URL: https://roadmap.sh/projects/blogging-platform-api
+
 ## More Projects
 
 Additional projects will be added as I progress through the roadmap.
