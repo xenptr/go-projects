@@ -2,6 +2,7 @@ package sql
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -13,15 +14,19 @@ import (
 
 const selectPost = `
 SELECT
-id,
-title,
-content,
-category,
-tags,
-created_at,
-updated_at
+	id,
+	title,
+	content,
+	category,
+	tags,
+	created_at,
+	updated_at
 `
 
+// pgTypeMap is reused across all scan calls to avoid per-call allocation.
+var pgTypeMap = pgtype.NewMap()
+
+// Store implements store.PostStore using a *sql.DB connection pool.
 type Store struct {
 	db *sql.DB
 }
@@ -30,21 +35,67 @@ func New(db *sql.DB) *Store {
 	return &Store{db: db}
 }
 
-func (s *Store) AddPost(post models.Post) (int64, error) {
+// ── helpers
+
+// validatePost checks that the required fields Title and Content are present
+// and non-empty. Returns store.ErrInvalidInput on failure.
+func validatePost(post models.Post) error {
 	if post.Title == nil || strings.TrimSpace(*post.Title) == "" {
-		return 0, fmt.Errorf("title is required")
+		return fmt.Errorf("%w: title is required", store.ErrInvalidInput)
 	}
 	if post.Content == nil || strings.TrimSpace(*post.Content) == "" {
-		return 0, fmt.Errorf("content is required")
+		return fmt.Errorf("%w: content is required", store.ErrInvalidInput)
 	}
+	return nil
+}
 
-	var id int64
+// scanPost scans one row into a models.Post.
+type rowScanner interface {
+	Scan(dest ...any) error
+}
+
+func scanPost(row rowScanner) (models.Post, error) {
+	var post models.Post
+	err := row.Scan(
+		&post.ID,
+		&post.Title,
+		&post.Content,
+		&post.Category,
+		pgTypeMap.SQLScanner(&post.Tags),
+		&post.CreatedAt,
+		&post.UpdatedAt,
+	)
+	return post, err
+}
+
+// collectPosts drains sql.Rows into a slice of posts.
+func collectPosts(rows *sql.Rows) ([]models.Post, error) {
+	defer rows.Close()
+
+	var posts []models.Post
+	for rows.Next() {
+		post, err := scanPost(rows)
+		if err != nil {
+			return nil, err
+		}
+		posts = append(posts, post)
+	}
+	return posts, rows.Err()
+}
+
+// ── PostStore implementation
+
+func (s *Store) AddPost(post models.Post) (int64, error) {
+	if err := validatePost(post); err != nil {
+		return 0, err
+	}
 
 	category := ""
 	if post.Category != nil {
 		category = *post.Category
 	}
 
+	var id int64
 	err := s.db.QueryRow(
 		`INSERT INTO posts (title, content, category, tags)
 		VALUES ($1, $2, $3, $4)
@@ -52,129 +103,72 @@ func (s *Store) AddPost(post models.Post) (int64, error) {
 		*post.Title, *post.Content, category, post.Tags,
 	).Scan(&id)
 	if err != nil {
-		return 0, fmt.Errorf("addBlog: %w", err)
+		return 0, fmt.Errorf("addPost: %w", err)
 	}
 
 	return id, nil
 }
 
 func (s *Store) AllPosts() ([]models.Post, error) {
-	var posts []models.Post
 	rows, err := s.db.Query(selectPost + `FROM posts`)
 	if err != nil {
 		return nil, fmt.Errorf("allPosts: %w", err)
 	}
-	defer rows.Close()
 
-	for rows.Next() {
-		var post models.Post
-
-		if err = rows.Scan(
-			&post.ID,
-			&post.Title,
-			&post.Content,
-			&post.Category,
-			pgtype.NewMap().SQLScanner(&post.Tags),
-			&post.CreatedAt,
-			&post.UpdatedAt,
-		); err != nil {
-			return nil, fmt.Errorf("allPosts: %w", err)
-		}
-
-		posts = append(posts, post)
-	}
-
-	if err = rows.Err(); err != nil {
+	posts, err := collectPosts(rows)
+	if err != nil {
 		return nil, fmt.Errorf("allPosts: %w", err)
 	}
-
 	return posts, nil
 }
 
 func (s *Store) PostByID(id int64) (models.Post, error) {
-	var post models.Post
+	row := s.db.QueryRow(selectPost+`FROM posts WHERE id = $1`, id)
 
-	row := s.db.QueryRow(
-		selectPost+`FROM posts
-		WHERE id = $1`, id,
-	)
-
-	if err := row.Scan(
-		&post.ID,
-		&post.Title,
-		&post.Content,
-		&post.Category,
-		pgtype.NewMap().SQLScanner(&post.Tags),
-		&post.CreatedAt,
-		&post.UpdatedAt,
-	); err != nil {
-		if err == sql.ErrNoRows {
+	post, err := scanPost(row)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
 			return post, store.ErrNotFound
 		}
 		return post, fmt.Errorf("postByID: %w", err)
 	}
-
 	return post, nil
 }
 
 func (s *Store) PostsByTerm(term string) ([]models.Post, error) {
-	var posts []models.Post
 	rows, err := s.db.Query(
 		selectPost+`FROM posts
-		WHERE 
-		title ILIKE '%' || $1 || '%'
-		OR content ILIKE '%' || $1 || '%'
-		OR category ILIKE '%' || $1 || '%'
-		OR EXISTS (
-			SELECT 1
-			FROM unnest(tags) AS tag
-			WHERE tag ILIKE '%' || $1 || '%'
-		)`,
+		WHERE
+			title       ILIKE '%' || $1 || '%'
+			OR content  ILIKE '%' || $1 || '%'
+			OR category ILIKE '%' || $1 || '%'
+			OR EXISTS (
+				SELECT 1
+				FROM unnest(tags) AS tag
+				WHERE tag ILIKE '%' || $1 || '%'
+			)`,
 		term,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("postsByTerm: %w", err)
 	}
-	defer rows.Close()
 
-	for rows.Next() {
-		var post models.Post
-
-		if err = rows.Scan(
-			&post.ID,
-			&post.Title,
-			&post.Content,
-			&post.Category,
-			pgtype.NewMap().SQLScanner(&post.Tags),
-			&post.CreatedAt,
-			&post.UpdatedAt,
-		); err != nil {
-			return nil, fmt.Errorf("postsByTerm: %w", err)
-		}
-
-		posts = append(posts, post)
-	}
-
-	if err = rows.Err(); err != nil {
+	posts, err := collectPosts(rows)
+	if err != nil {
 		return nil, fmt.Errorf("postsByTerm: %w", err)
 	}
-
 	return posts, nil
 }
 
 func (s *Store) UpdatePost(id int64, post models.Post) error {
-	if post.Title == nil || strings.TrimSpace(*post.Title) == "" {
-		return fmt.Errorf("title is required")
-	}
-	if post.Content == nil || strings.TrimSpace(*post.Content) == "" {
-		return fmt.Errorf("content is required")
+	if err := validatePost(post); err != nil {
+		return err
 	}
 
-	setClauses := []string{}
-	args := []any{}
+	setClauses := make([]string, 0, 5)
+	args := make([]any, 0, 5)
 	i := 1
 
-	// Title and Content are guaranteed non-nil by the validation above.
 	setClauses = append(setClauses, fmt.Sprintf("title = $%d", i))
 	args = append(args, *post.Title)
 	i++
@@ -192,10 +186,6 @@ func (s *Store) UpdatePost(id int64, post models.Post) error {
 		setClauses = append(setClauses, fmt.Sprintf("tags = $%d", i))
 		args = append(args, post.Tags)
 		i++
-	}
-
-	if len(setClauses) == 0 {
-		return fmt.Errorf("updatePost: no fields to update")
 	}
 
 	setClauses = append(setClauses, "updated_at = CURRENT_TIMESTAMP")
@@ -217,9 +207,8 @@ func (s *Store) UpdatePost(id int64, post models.Post) error {
 		return fmt.Errorf("updatePost: %w", err)
 	}
 	if rows == 0 {
-		return fmt.Errorf("updatePost: no post with id %d", id)
+		return store.ErrNotFound
 	}
-
 	return nil
 }
 
@@ -228,6 +217,7 @@ func (s *Store) DeletePost(id int64) error {
 	if err != nil {
 		return fmt.Errorf("deletePost: %w", err)
 	}
+
 	rows, err := result.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("deletePost: %w", err)
@@ -235,6 +225,5 @@ func (s *Store) DeletePost(id int64) error {
 	if rows == 0 {
 		return store.ErrNotFound
 	}
-
 	return nil
 }

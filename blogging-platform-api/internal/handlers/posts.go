@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -11,9 +12,59 @@ import (
 	"github.com/xenptr/go-projects/blogging-platform-api/internal/store"
 )
 
+// ── response helpers
+
+// writeJSON encodes v as JSON and writes it with the given status code.
+func writeJSON(w http.ResponseWriter, status int, v any) {
+	var buf bytes.Buffer
+
+	if err := json.NewEncoder(&buf).Encode(v); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_, _ = buf.WriteTo(w)
+}
+
+// errorResponse is the standard JSON error envelope returned to callers.
+type errorResponse struct {
+	Error string `json:"error"`
+}
+
+// writeError writes a JSON error envelope with the given status code.
+func writeError(w http.ResponseWriter, status int, msg string) {
+	writeJSON(w, status, errorResponse{Error: msg})
+}
+
+// storeError maps store sentinel errors to the appropriate HTTP status and
+// response body. Any error that is not a recognised sentinel becomes a 500.
+func storeError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, store.ErrNotFound):
+		writeError(w, http.StatusNotFound, err.Error())
+	case errors.Is(err, store.ErrInvalidInput):
+		writeError(w, http.StatusUnprocessableEntity, err.Error())
+	case errors.Is(err, store.ErrNoUpdate):
+		writeError(w, http.StatusUnprocessableEntity, err.Error())
+	default:
+		writeError(w, http.StatusInternalServerError, "internal server error")
+	}
+}
+
+// parseID extracts and validates the {id} path value.
+func parseID(r *http.Request) (int64, error) {
+	return strconv.ParseInt(strings.TrimSpace(r.PathValue("id")), 10, 64)
+}
+
+// ── handlers
+
 func (h *Handler) ListPosts(w http.ResponseWriter, r *http.Request) {
-	var posts []models.Post
-	var err error
+	var (
+		posts []models.Post
+		err   error
+	)
 
 	term := strings.TrimSpace(r.URL.Query().Get("term"))
 	if term != "" {
@@ -22,132 +73,97 @@ func (h *Handler) ListPosts(w http.ResponseWriter, r *http.Request) {
 		posts, err = h.store.AllPosts()
 	}
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		storeError(w, err)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err = json.NewEncoder(w).Encode(posts); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if posts == nil {
+		posts = []models.Post{}
 	}
+
+	writeJSON(w, http.StatusOK, posts)
 }
 
-func (h *Handler) CreatePosts(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreatePost(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	var post models.Post
-
 	if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "malformed request body")
 		return
 	}
 
 	id, err := h.store.AddPost(post)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		storeError(w, err)
 		return
 	}
 
-	post, err = h.store.PostByID(id)
+	created, err := h.store.PostByID(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		storeError(w, err)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	if err = json.NewEncoder(w).Encode(post); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	writeJSON(w, http.StatusCreated, created)
 }
 
 func (h *Handler) GetPost(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimSpace(r.PathValue("id"))
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := parseID(r)
 	if err != nil {
-		http.Error(w, "invalid id", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "invalid post id")
 		return
 	}
 
-	var post models.Post
-
-	post, err = h.store.PostByID(id)
+	post, err := h.store.PostByID(id)
 	if err != nil {
-		if errors.Is(err, store.ErrNotFound) {
-			http.Error(w, err.Error(), http.StatusNotFound)
-		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
+		storeError(w, err)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err = json.NewEncoder(w).Encode(post); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	writeJSON(w, http.StatusOK, post)
 }
 
 func (h *Handler) UpdatePost(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimSpace(r.PathValue("id"))
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := parseID(r)
 	if err != nil {
-		http.Error(w, "invalid id", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "invalid post id")
 		return
 	}
-
-	var post models.Post
 
 	defer r.Body.Close()
 
+	var post models.Post
 	if err = json.NewDecoder(r.Body).Decode(&post); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "malformed request body")
 		return
 	}
 
-	err = h.store.UpdatePost(id, post)
+	if err = h.store.UpdatePost(id, post); err != nil {
+		storeError(w, err)
+		return
+	}
+
+	updated, err := h.store.PostByID(id)
 	if err != nil {
-		if errors.Is(err, store.ErrNotFound) {
-			http.Error(w, err.Error(), http.StatusNotFound)
-		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
+		storeError(w, err)
 		return
 	}
 
-	post, err = h.store.PostByID(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err = json.NewEncoder(w).Encode(post); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	writeJSON(w, http.StatusOK, updated)
 }
 
 func (h *Handler) DeletePost(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimSpace(r.PathValue("id"))
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := parseID(r)
 	if err != nil {
-		http.Error(w, "invalid id", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "invalid post id")
 		return
 	}
 
 	if err = h.store.DeletePost(id); err != nil {
-		if errors.Is(err, store.ErrNotFound) {
-			http.Error(w, err.Error(), http.StatusNotFound)
-		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
+		storeError(w, err)
 		return
 	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
