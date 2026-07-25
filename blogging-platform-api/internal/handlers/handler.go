@@ -1,11 +1,11 @@
 package handlers
 
-import "blogging-platform-api/internal/store"
+import "github.com/xenptr/go-projects/blogging-platform-api/internal/store"
 
 type Handler struct {
-	store *store.Store
+	store store.PostStore
 }
 
-func New(store *store.Store) *Handler {
+func New(store store.PostStore) *Handler {
 	return &Handler{store: store}
 }

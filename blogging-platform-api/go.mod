@@ -1,4 +1,4 @@
-module blogging-platform-api
+module github.com/xenptr/go-projects/blogging-platform-api
 
 go 1.25.5
 

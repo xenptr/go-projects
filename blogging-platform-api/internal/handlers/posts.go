@@ -1,13 +1,14 @@
 package handlers
 
 import (
-	"blogging-platform-api/internal/models"
-	"blogging-platform-api/internal/store"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/xenptr/go-projects/blogging-platform-api/internal/models"
+	"github.com/xenptr/go-projects/blogging-platform-api/internal/store"
 )
 
 func (h *Handler) ListPosts(w http.ResponseWriter, r *http.Request) {
@@ -43,7 +44,7 @@ func (h *Handler) CreatePosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := h.store.AddBlog(post)
+	id, err := h.store.AddPost(post)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

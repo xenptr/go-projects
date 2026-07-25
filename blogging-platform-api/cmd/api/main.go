@@ -1,25 +1,28 @@
 package main
 
 import (
-	"blogging-platform-api/internal/config"
-	"blogging-platform-api/internal/database"
-	"blogging-platform-api/internal/handlers"
-	"blogging-platform-api/internal/store"
 	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/xenptr/go-projects/blogging-platform-api/internal/config"
+	"github.com/xenptr/go-projects/blogging-platform-api/internal/database"
+	"github.com/xenptr/go-projects/blogging-platform-api/internal/handlers"
+	pgxstore "github.com/xenptr/go-projects/blogging-platform-api/internal/store/pgx"
 )
 
 func main() {
 	cfg := config.Load()
 
-	db, err := database.Open(cfg)
+	db, err := database.OpenPGX(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer db.Close()
+
 	fmt.Print("Connected!")
 
-	store := store.New(db)
+	store := pgxstore.New(db)
 	handler := handlers.New(store)
 
 	mux := http.NewServeMux()

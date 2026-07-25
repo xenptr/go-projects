@@ -1,16 +1,15 @@
 package database
 
 import (
-	"blogging-platform-api/internal/config"
 	"context"
 	"database/sql"
 	"fmt"
 	"time"
 
+	"github.com/xenptr/go-projects/blogging-platform-api/internal/config"
+
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
-
-var db *sql.DB
 
 func Open(cfg *config.Config) (*sql.DB, error) {
 	dsn := fmt.Sprintf(
@@ -22,8 +21,7 @@ func Open(cfg *config.Config) (*sql.DB, error) {
 		cfg.DBName,
 	)
 
-	var err error
-	db, err = sql.Open("pgx", dsn)
+	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		return nil, err
 	}

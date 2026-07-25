@@ -1,23 +1,25 @@
-package store
+package sql
 
 import (
-	"blogging-platform-api/internal/models"
 	"database/sql"
 	"fmt"
 	"strings"
+
+	"github.com/xenptr/go-projects/blogging-platform-api/internal/models"
+	"github.com/xenptr/go-projects/blogging-platform-api/internal/store"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const selectPost = `
 SELECT
-	id,
-	title,
-	content,
-	category,
-	tags,
-	created_at,
-	updated_at
+id,
+title,
+content,
+category,
+tags,
+created_at,
+updated_at
 `
 
 type Store struct {
@@ -28,7 +30,7 @@ func New(db *sql.DB) *Store {
 	return &Store{db: db}
 }
 
-func (s *Store) AddBlog(post models.Post) (int64, error) {
+func (s *Store) AddPost(post models.Post) (int64, error) {
 	if post.Title == nil || strings.TrimSpace(*post.Title) == "" {
 		return 0, fmt.Errorf("title is required")
 	}
@@ -107,7 +109,7 @@ func (s *Store) PostByID(id int64) (models.Post, error) {
 		&post.UpdatedAt,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return post, ErrNotFound
+			return post, store.ErrNotFound
 		}
 		return post, fmt.Errorf("postByID: %w", err)
 	}
@@ -120,14 +122,14 @@ func (s *Store) PostsByTerm(term string) ([]models.Post, error) {
 	rows, err := s.db.Query(
 		selectPost+`FROM posts
 		WHERE 
-			title ILIKE '%' || $1 || '%'
-			OR content ILIKE '%' || $1 || '%'
-			OR category ILIKE '%' || $1 || '%'
-			OR EXISTS (
-				SELECT 1
-				FROM unnest(tags) AS tag
-				WHERE tag ILIKE '%' || $1 || '%'
-			)`,
+		title ILIKE '%' || $1 || '%'
+		OR content ILIKE '%' || $1 || '%'
+		OR category ILIKE '%' || $1 || '%'
+		OR EXISTS (
+			SELECT 1
+			FROM unnest(tags) AS tag
+			WHERE tag ILIKE '%' || $1 || '%'
+		)`,
 		term,
 	)
 	if err != nil {
@@ -231,7 +233,7 @@ func (s *Store) DeletePost(id int64) error {
 		return fmt.Errorf("deletePost: %w", err)
 	}
 	if rows == 0 {
-		return ErrNotFound
+		return store.ErrNotFound
 	}
 
 	return nil
