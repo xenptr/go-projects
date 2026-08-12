@@ -9,6 +9,8 @@ type Config struct {
 	Pass    string
 	DBName  string
 	AppPort string
+
+	JWTSecret []byte
 }
 
 func Load() *Config {
@@ -24,5 +26,11 @@ func Load() *Config {
 		Pass:    os.Getenv("DBPASS"),
 		DBName:  os.Getenv("DBNAME"),
 		AppPort: appPort,
+	}
+}
+
+func SecretKey() *Config {
+	return &Config{
+		JWTSecret: []byte(os.Getenv("JWT_SECRET")),
 	}
 }

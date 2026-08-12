@@ -21,7 +21,8 @@ func main() {
 	defer db.Close()
 
 	repo := repository.New(db)
-	h := handlers.New(repo)
+	secret := config.SecretKey().JWTSecret
+	h := handlers.New(repo, secret)
 
 	mux := http.NewServeMux()
 	routes.RegisterRoutes(mux, h)
