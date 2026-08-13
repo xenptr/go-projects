@@ -4,13 +4,14 @@ import (
 	"net/http"
 
 	"github.com/xenptr/go-projects/todo-list-api/internal/handlers"
+	"github.com/xenptr/go-projects/todo-list-api/internal/middleware"
 )
 
-func RegisterRoutes(mux *http.ServeMux, h *handlers.Handler) {
+func RegisterRoutes(mux *http.ServeMux, h *handlers.Handler, secret []byte) {
 	mux.HandleFunc("GET /", h.Root)
 
 	mux.HandleFunc("POST /register", h.CreateUser)
 	mux.HandleFunc("POST /login", h.Login)
 
-	mux.HandleFunc("POST /todos", h.CreateTodo)
+	mux.Handle("POST /todos", middleware.Auth(secret)(http.HandlerFunc(h.CreateTodo)))
 }

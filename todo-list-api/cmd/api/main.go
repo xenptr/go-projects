@@ -25,7 +25,7 @@ func main() {
 	h := handlers.New(repo, secret)
 
 	mux := http.NewServeMux()
-	routes.RegisterRoutes(mux, h)
+	routes.RegisterRoutes(mux, h, secret)
 
 	server := &http.Server{
 		Addr:    ":" + cfg.AppPort,
