@@ -14,4 +14,7 @@ func RegisterRoutes(mux *http.ServeMux, h *handlers.Handler, secret []byte) {
 	mux.HandleFunc("POST /login", h.Login)
 
 	mux.Handle("POST /todos", middleware.Auth(secret)(http.HandlerFunc(h.CreateTodo)))
+	mux.Handle("PUT /todos/{id}", middleware.Auth(secret)(http.HandlerFunc(h.UpdateTodo)))
+	mux.Handle("DELETE /todos/{id}", middleware.Auth(secret)(http.HandlerFunc(h.DeleteTodo)))
+	mux.Handle("GET /todos/{id}", middleware.Auth(secret)(http.HandlerFunc(h.GetTodo)))
 }

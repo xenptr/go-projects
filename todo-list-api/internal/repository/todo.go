@@ -49,29 +49,50 @@ func (r *Repo) GetTodoByID(id int64) (models.Todo, error) {
 	return todo, nil
 }
 
-func (r *Repo) ListTodosByUser(userID int64) ([]models.Todo, error) {
+func (r *Repo) ListTodosByUser(userID int64, page *int64, limit *int64) ([]models.Todo, error) {
 	var todos []models.Todo
-	rows, err := r.db.Query(
-		context.Background(),
-		`SELECT
-			id 
-			user_id
-			title
-			description
-			completed
+
+	query := `
+		SELECT
+			id,
+			user_id,
+			title,
+			description,
+			completed,
 			created_at
-		FROM todos WHERE user_id = $1`, userID,
-	)
+		FROM todos
+		WHERE user_id = $1
+	`
+
+	args := []any{userID}
+
+	if limit != nil {
+		query += `LIMIT $2`
+		args = append(args, *limit)
+		if page != nil {
+			offset := (*page - 1) * *limit
+
+			query += `OFFSET $3`
+			args = append(args, offset)
+		}
+	}
+
+	rows, err := r.db.Query(context.Background(), query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("ListTodosByUser query: %w", err)
+	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var todo models.Todo
+
 		if err := rows.Scan(&todo); err != nil {
-			return nil, fmt.Errorf("ListTodosByUser: %w", err)
+			return nil, fmt.Errorf("ListTodosByUser scan: %w", err)
 		}
 		todos = append(todos, todo)
 	}
 	if rows.Err() != nil {
-		return nil, fmt.Errorf("ListTodosByUser: %w", err)
+		return nil, fmt.Errorf("ListTodosByUser rows: %w", err)
 	}
 
 	return todos, nil
