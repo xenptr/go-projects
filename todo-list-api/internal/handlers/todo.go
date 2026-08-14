@@ -6,34 +6,46 @@ import (
 	"strconv"
 
 	"github.com/xenptr/go-projects/todo-list-api/internal/auth"
+	"github.com/xenptr/go-projects/todo-list-api/internal/dto"
 	"github.com/xenptr/go-projects/todo-list-api/internal/models"
+	"github.com/xenptr/go-projects/todo-list-api/internal/validation"
 )
 
 func (h *Handler) CreateTodo(w http.ResponseWriter, r *http.Request) {
 	userID, ok := auth.GetUserID(r)
 	if !ok {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		writeError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	defer r.Body.Close()
 
-	var todo models.Todo
-	if err := json.NewDecoder(r.Body).Decode(&todo); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	var input dto.CreateTodoRequest
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	todo.UserID = userID
+
+	if err := validation.CreateTodoRequest(input); err != nil {
+		writeValidationError(w, err)
+		return
+	}
+
+	todo := models.Todo{
+		UserID:      userID,
+		Title:       input.Title,
+		Description: input.Description,
+	}
 
 	id, err := h.repo.CreateTodo(todo)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 
 	created, err := h.repo.GetTodoByID(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 
@@ -43,34 +55,54 @@ func (h *Handler) CreateTodo(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdateTodo(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		http.Error(w, "invalid id", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "invalid id")
 		return
 	}
 
 	userID, ok := auth.GetUserID(r)
 	if !ok {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		writeError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	ownerID, err := h.repo.GetTodoOwner(id)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "todo not found")
+		return
+	}
+	if ownerID != userID {
+		writeError(w, http.StatusForbidden, "Forbidden")
 		return
 	}
 
 	defer r.Body.Close()
 
-	var todo models.Todo
-	if err := json.NewDecoder(r.Body).Decode(&todo); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	var input dto.UpdateTodoRequest
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	todo.UserID = userID
 
-	err = h.repo.UpdateTodo(id, todo)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := validation.UpdateTodoRequest(input); err != nil {
+		writeValidationError(w, err)
+		return
+	}
+
+	todo := models.Todo{
+		UserID:      userID,
+		Title:       input.Title,
+		Description: input.Description,
+		Completed:   input.Completed,
+	}
+
+	if err = h.repo.UpdateTodo(id, todo); err != nil {
+		writeError(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 
 	updated, err := h.repo.GetTodoByID(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 
@@ -80,96 +112,92 @@ func (h *Handler) UpdateTodo(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) DeleteTodo(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		http.Error(w, "invalid id", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "invalid id")
 		return
 	}
 
 	userID, ok := auth.GetUserID(r)
 	if !ok {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		writeError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
-	defer r.Body.Close()
-
-	var todo models.Todo
-	if err := json.NewDecoder(r.Body).Decode(&todo); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	todo.UserID = userID
-
-	err = h.repo.DeleteTodo(id)
+	ownerID, err := h.repo.GetTodoOwner(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, http.StatusNotFound, "todo not found")
+		return
+	}
+	if ownerID != userID {
+		writeError(w, http.StatusForbidden, "Forbidden")
 		return
 	}
 
-	updated, err := h.repo.GetTodoByID(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err = h.repo.DeleteTodo(id); err != nil {
+		writeError(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, updated)
+	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *Handler) GetTodo(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) ListTodos(w http.ResponseWriter, r *http.Request) {
 	userID, ok := auth.GetUserID(r)
 	if !ok {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		writeError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
-
-	defer r.Body.Close()
 
 	values := r.URL.Query()
 
 	var page *int64
 	var limit *int64
+	var search *string
 
 	if value := values.Get("page"); value != "" {
 		v, err := strconv.ParseInt(value, 10, 64)
 		if err != nil || v < 1 {
-			http.Error(w, "page must be a positive integer", http.StatusBadRequest)
+			writeError(w, http.StatusBadRequest, "page must be a positive integer")
 			return
 		}
-
 		page = &v
 	}
 
 	if value := values.Get("limit"); value != "" {
 		v, err := strconv.ParseInt(value, 10, 64)
 		if err != nil || v < 1 {
-			http.Error(w, "limit must be a positive integer", http.StatusBadRequest)
+			writeError(w, http.StatusBadRequest, "limit must be a positive integer")
 			return
 		}
-
 		limit = &v
 	}
 
+	if value := values.Get("search"); value != "" {
+		search = &value
+	} else if value := values.Get("s"); value != "" {
+		search = &value
+	}
+
 	if page != nil && limit == nil {
-		http.Error(w, "limit is required when page is provided", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "limit is required when page is provided")
 		return
 	}
 
-	todos, err := h.repo.ListTodosByUser(userID, page, limit)
+	todos, total, err := h.repo.ListTodosByUser(userID, page, limit, search)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 
 	response := map[string]any{
-		"data": todos,
+		"data":  todos,
+		"total": total,
 	}
-
 	if page != nil {
 		response["page"] = *page
 	}
 	if limit != nil {
 		response["limit"] = *limit
 	}
-	response["total"] = len(todos)
 
 	writeJSON(w, http.StatusOK, response)
 }

@@ -3,114 +3,89 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/xenptr/go-projects/todo-list-api/internal/auth"
+	"github.com/xenptr/go-projects/todo-list-api/internal/dto"
 	"github.com/xenptr/go-projects/todo-list-api/internal/models"
+	"github.com/xenptr/go-projects/todo-list-api/internal/validation"
 )
 
 func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	var user models.User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	var input dto.RegisterRequest
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
-	hash, err := auth.HashPassword(user.Password)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := validation.RegisterRequest(input); err != nil {
+		writeValidationError(w, err)
 		return
 	}
-	user.PasswordHash = hash
-	user.Password = ""
+
+	hash, err := auth.HashPassword(input.Password)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal server error")
+		return
+	}
+
+	user := models.User{
+		Name:         input.Name,
+		Email:        input.Email,
+		PasswordHash: hash,
+	}
 
 	id, err := h.repo.CreateUser(user)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		if strings.Contains(err.Error(), "unique") || strings.Contains(err.Error(), "duplicate") {
+			writeError(w, http.StatusConflict, "email already in use")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 
-	signed, err := auth.GenerateToken(id, h.secret)
+	token, err := auth.GenerateToken(id, h.secret)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 
-	created, err := h.repo.GetUserByID(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	response := map[string]any{
-		"user":  created,
-		"token": signed,
-	}
-
-	writeJSON(w, http.StatusCreated, response)
+	writeJSON(w, http.StatusCreated, map[string]string{"token": token})
 }
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	var user models.User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	var input dto.LoginRequest
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
-	// userToken := r.Header.Get("Authorization")
-	// t := strings.TrimPrefix(userToken, "Bearer ")
-	// claims := jwt.RegisteredClaims{
-	// 	Subject:   strconv.FormatInt(user.ID, 10),
-	// 	ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
-	// 	IssuedAt:  jwt.NewNumericDate(time.Now()),
-	// }
-	// parser := jwt.NewParser(
-	// 	jwt.WithValidMethods([]string{"HS256"}),
-	// )
-	// keyFunc := func(token *jwt.Token) (any, error) {
-	// 	return h.secret, nil
-	// }
-	// token, err := parser.ParseWithClaims(t, &claims, keyFunc)
-	// if err != nil {
-	// 	if errors.Is(err, jwt.ErrTokenExpired) {
-	// 		http.Error(w, "token expired", http.StatusUnauthorized)
-	// 		return
-	// 	}
-	//
-	// 	if errors.Is(err, jwt.ErrTokenSignatureInvalid) {
-	// 		http.Error(w, "invalid token", http.StatusUnauthorized)
-	// 		return
-	// 	}
-	//
-	// 	http.Error(w, "invalid token", http.StatusUnauthorized)
-	// 	return
-	// }
+	if err := validation.LoginRequest(input); err != nil {
+		writeValidationError(w, err)
+		return
+	}
 
-	data, err := h.repo.GetUserByEmail(user.Email)
+	user, err := h.repo.GetUserByEmail(input.Email)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
 
-	if err = auth.CheckPassword(user.Password, data.PasswordHash); err != nil {
-		http.Error(w, "inavlid credentials", http.StatusUnauthorized)
+	if err = auth.CheckPassword(input.Password, user.PasswordHash); err != nil {
+		writeError(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
 
-	signed, err := auth.GenerateToken(data.ID, h.secret)
+	token, err := auth.GenerateToken(user.ID, h.secret)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, http.StatusInternalServerError, "internal server error")
 		return
-
 	}
 
-	response := map[string]any{
-		"user":  data,
-		"token": signed,
-	}
-
-	writeJSON(w, http.StatusOK, response)
+	writeJSON(w, http.StatusOK, map[string]string{"token": token})
 }

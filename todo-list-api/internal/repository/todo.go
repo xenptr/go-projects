@@ -9,103 +9,115 @@ import (
 )
 
 func (r *Repo) CreateTodo(t models.Todo) (int64, error) {
-	row := r.db.QueryRow(
+	var id int64
+	err := r.db.QueryRow(
 		context.Background(),
 		`INSERT INTO todos (user_id, title, description, completed)
-			VALUES ($1, $2, $3, $4)
-			RETURNING id`,
+		 VALUES ($1, $2, $3, $4)
+		 RETURNING id`,
 		t.UserID,
 		t.Title,
 		t.Description,
 		t.Completed,
-	)
-
-	var id int64
-	if err := row.Scan(&id); err != nil {
+	).Scan(&id)
+	if err != nil {
 		return 0, fmt.Errorf("CreateTodo: %w", err)
 	}
-
 	return id, nil
 }
 
 func (r *Repo) GetTodoByID(id int64) (models.Todo, error) {
-	var todo models.Todo
-	row := r.db.QueryRow(
+	var t models.Todo
+	err := r.db.QueryRow(
 		context.Background(),
-		`SELECT
-			id 
-			user_id
-			title
-			description
-			completed
-			created_at
-		FROM todos WHERE id = $1`, id,
-	)
-
-	if err := row.Scan(&todo); err != nil {
-		return todo, fmt.Errorf("GetTodoByID: %w", err)
+		`SELECT id, user_id, title, description, completed, created_at
+		 FROM todos WHERE id = $1`,
+		id,
+	).Scan(&t.ID, &t.UserID, &t.Title, &t.Description, &t.Completed, &t.CreatedAt)
+	if err != nil {
+		return t, fmt.Errorf("GetTodoByID: %w", err)
 	}
-
-	return todo, nil
+	return t, nil
 }
 
-func (r *Repo) ListTodosByUser(userID int64, page *int64, limit *int64) ([]models.Todo, error) {
-	var todos []models.Todo
-
-	query := `
-		SELECT
-			id,
-			user_id,
-			title,
-			description,
-			completed,
-			created_at
-		FROM todos
-		WHERE user_id = $1
-	`
-
+func (r *Repo) ListTodosByUser(userID int64, page *int64, limit *int64, search *string) ([]models.Todo, int64, error) {
+	where := `WHERE user_id = $1`
 	args := []any{userID}
+	argIndex := 2
+
+	if search != nil {
+		where += fmt.Sprintf(` AND (title ILIKE $%d OR description ILIKE $%d)`, argIndex, argIndex)
+		args = append(args, "%"+*search+"%")
+		argIndex++
+	}
+
+	var total int64
+	err := r.db.QueryRow(
+		context.Background(),
+		`SELECT COUNT(*) FROM todos `+where,
+		args...,
+	).Scan(&total)
+	if err != nil {
+		return nil, 0, fmt.Errorf("ListTodosByUser count: %w", err)
+	}
+
+	query := `SELECT id, user_id, title, description, completed, created_at FROM todos ` + where + ` ORDER BY created_at DESC`
 
 	if limit != nil {
-		query += `LIMIT $2`
+		query += fmt.Sprintf(` LIMIT $%d`, argIndex)
 		args = append(args, *limit)
+		argIndex++
+
 		if page != nil {
 			offset := (*page - 1) * *limit
-
-			query += `OFFSET $3`
+			query += fmt.Sprintf(` OFFSET $%d`, argIndex)
 			args = append(args, offset)
 		}
 	}
 
 	rows, err := r.db.Query(context.Background(), query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("ListTodosByUser query: %w", err)
+		return nil, 0, fmt.Errorf("ListTodosByUser query: %w", err)
 	}
 	defer rows.Close()
 
+	var todos []models.Todo
 	for rows.Next() {
-		var todo models.Todo
-
-		if err := rows.Scan(&todo); err != nil {
-			return nil, fmt.Errorf("ListTodosByUser scan: %w", err)
+		var t models.Todo
+		if err := rows.Scan(&t.ID, &t.UserID, &t.Title, &t.Description, &t.Completed, &t.CreatedAt); err != nil {
+			return nil, 0, fmt.Errorf("ListTodosByUser scan: %w", err)
 		}
-		todos = append(todos, todo)
+		todos = append(todos, t)
 	}
 	if rows.Err() != nil {
-		return nil, fmt.Errorf("ListTodosByUser rows: %w", err)
+		return nil, 0, fmt.Errorf("ListTodosByUser rows: %w", rows.Err())
 	}
 
-	return todos, nil
+	if todos == nil {
+		todos = []models.Todo{}
+	}
+
+	return todos, total, nil
+}
+
+func (r *Repo) GetTodoOwner(id int64) (int64, error) {
+	var ownerID int64
+	err := r.db.QueryRow(
+		context.Background(),
+		`SELECT user_id FROM todos WHERE id = $1`,
+		id,
+	).Scan(&ownerID)
+	if err != nil {
+		return 0, fmt.Errorf("GetTodoOwner: %w", err)
+	}
+	return ownerID, nil
 }
 
 func (r *Repo) UpdateTodo(id int64, t models.Todo) error {
-	setClauses := make([]string, 3)
-	args := make([]any, 3)
+	var setClauses []string
+	var args []any
 	i := 1
 
-	if t.UserID == 0 {
-		return fmt.Errorf("user_id is required")
-	}
 	if strings.TrimSpace(t.Title) != "" {
 		setClauses = append(setClauses, fmt.Sprintf("title = $%d", i))
 		args = append(args, t.Title)
