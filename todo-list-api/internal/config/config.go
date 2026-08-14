@@ -3,13 +3,12 @@ package config
 import "os"
 
 type Config struct {
-	Host    string
-	Port    string
-	User    string
-	Pass    string
-	DBName  string
-	AppPort string
-
+	Host      string
+	Port      string
+	User      string
+	Pass      string
+	DBName    string
+	AppPort   string
 	JWTSecret []byte
 }
 
@@ -20,17 +19,12 @@ func Load() *Config {
 	}
 
 	return &Config{
-		Host:    os.Getenv("DBHOST"),
-		Port:    os.Getenv("DBPORT"),
-		User:    os.Getenv("DBUSER"),
-		Pass:    os.Getenv("DBPASS"),
-		DBName:  os.Getenv("DBNAME"),
-		AppPort: appPort,
-	}
-}
-
-func SecretKey() *Config {
-	return &Config{
+		Host:      os.Getenv("DB_HOST"),
+		Port:      os.Getenv("DB_PORT"),
+		User:      os.Getenv("DB_USER"),
+		Pass:      os.Getenv("DB_PASSWORD"),
+		DBName:    os.Getenv("DB_NAME"),
+		AppPort:   appPort,
 		JWTSecret: []byte(os.Getenv("JWT_SECRET")),
 	}
 }

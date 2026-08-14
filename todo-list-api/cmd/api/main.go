@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/joho/godotenv"
 	"github.com/xenptr/go-projects/todo-list-api/internal/config"
 	"github.com/xenptr/go-projects/todo-list-api/internal/db"
 	"github.com/xenptr/go-projects/todo-list-api/internal/handlers"
@@ -12,6 +13,9 @@ import (
 )
 
 func main() {
+	// Load .env file if present; ignore error in production where env vars are set directly.
+	_ = godotenv.Load()
+
 	cfg := config.Load()
 
 	db, err := db.Open(cfg)
@@ -21,11 +25,12 @@ func main() {
 	defer db.Close()
 
 	repo := repository.New(db)
-	secret := config.SecretKey().JWTSecret
-	h := handlers.New(repo, secret)
+	h := handlers.New(repo, cfg.JWTSecret)
 
 	mux := http.NewServeMux()
-	routes.RegisterRoutes(mux, h, secret)
+	routes.RegisterRoutes(mux, h, cfg.JWTSecret)
+
+	log.Printf("server starting on :%s", cfg.AppPort)
 
 	server := &http.Server{
 		Addr:    ":" + cfg.AppPort,
