@@ -37,7 +37,7 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		PasswordHash: hash,
 	}
 
-	id, err := h.repo.CreateUser(user)
+	id, err := h.userRepo.CreateUser(r.Context(), user)
 	if err != nil {
 		if strings.Contains(err.Error(), "unique") || strings.Contains(err.Error(), "duplicate") {
 			writeError(w, http.StatusConflict, "email already in use")
@@ -70,7 +70,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.repo.GetUserByEmail(input.Email)
+	user, err := h.userRepo.GetUserByEmail(r.Context(), input.Email)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "invalid credentials")
 		return

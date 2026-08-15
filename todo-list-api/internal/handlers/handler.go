@@ -3,13 +3,23 @@ package handlers
 import "github.com/xenptr/go-projects/todo-list-api/internal/repository"
 
 type Handler struct {
-	repo   *repository.Repo
-	secret []byte
+	userRepo repository.UserRepository
+	todoRepo repository.TodoRepository
+	secret   []byte
 }
 
-func New(repo *repository.Repo, secret []byte) *Handler {
+func New(store repository.Store, secret []byte) *Handler {
 	return &Handler{
-		repo:   repo,
-		secret: secret,
+		userRepo: store,
+		todoRepo: store,
+		secret:   secret,
+	}
+}
+
+func NewWithRepo(userRepo repository.UserRepository, todoRepo repository.TodoRepository, secret []byte) *Handler {
+	return &Handler{
+		userRepo: userRepo,
+		todoRepo: todoRepo,
+		secret:   secret,
 	}
 }

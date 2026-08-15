@@ -8,10 +8,10 @@ import (
 	"github.com/xenptr/go-projects/todo-list-api/internal/models"
 )
 
-func (r *Repo) CreateTodo(t models.Todo) (int64, error) {
+func (r *Repo) CreateTodo(ctx context.Context, t models.Todo) (int64, error) {
 	var id int64
-	err := r.db.QueryRow(
-		context.Background(),
+	err := r.pool.QueryRow(
+		ctx,
 		`INSERT INTO todos (user_id, title, description, completed)
 		 VALUES ($1, $2, $3, $4)
 		 RETURNING id`,
@@ -26,10 +26,10 @@ func (r *Repo) CreateTodo(t models.Todo) (int64, error) {
 	return id, nil
 }
 
-func (r *Repo) GetTodoByID(id int64) (models.Todo, error) {
+func (r *Repo) GetTodoByID(ctx context.Context, id int64) (models.Todo, error) {
 	var t models.Todo
-	err := r.db.QueryRow(
-		context.Background(),
+	err := r.pool.QueryRow(
+		ctx,
 		`SELECT id, user_id, title, description, completed, created_at
 		 FROM todos WHERE id = $1`,
 		id,
@@ -40,7 +40,7 @@ func (r *Repo) GetTodoByID(id int64) (models.Todo, error) {
 	return t, nil
 }
 
-func (r *Repo) ListTodosByUser(userID int64, page *int64, limit *int64, search *string) ([]models.Todo, int64, error) {
+func (r *Repo) ListTodosByUser(ctx context.Context, userID int64, page *int64, limit *int64, search *string) ([]models.Todo, int64, error) {
 	where := `WHERE user_id = $1`
 	args := []any{userID}
 	argIndex := 2
@@ -52,8 +52,8 @@ func (r *Repo) ListTodosByUser(userID int64, page *int64, limit *int64, search *
 	}
 
 	var total int64
-	err := r.db.QueryRow(
-		context.Background(),
+	err := r.pool.QueryRow(
+		ctx,
 		`SELECT COUNT(*) FROM todos `+where,
 		args...,
 	).Scan(&total)
@@ -75,7 +75,7 @@ func (r *Repo) ListTodosByUser(userID int64, page *int64, limit *int64, search *
 		}
 	}
 
-	rows, err := r.db.Query(context.Background(), query, args...)
+	rows, err := r.pool.Query(ctx, query, args...)
 	if err != nil {
 		return nil, 0, fmt.Errorf("ListTodosByUser query: %w", err)
 	}
@@ -100,10 +100,10 @@ func (r *Repo) ListTodosByUser(userID int64, page *int64, limit *int64, search *
 	return todos, total, nil
 }
 
-func (r *Repo) GetTodoOwner(id int64) (int64, error) {
+func (r *Repo) GetTodoOwner(ctx context.Context, id int64) (int64, error) {
 	var ownerID int64
-	err := r.db.QueryRow(
-		context.Background(),
+	err := r.pool.QueryRow(
+		ctx,
 		`SELECT user_id FROM todos WHERE id = $1`,
 		id,
 	).Scan(&ownerID)
@@ -113,7 +113,7 @@ func (r *Repo) GetTodoOwner(id int64) (int64, error) {
 	return ownerID, nil
 }
 
-func (r *Repo) UpdateTodo(id int64, t models.Todo) error {
+func (r *Repo) UpdateTodo(ctx context.Context, id int64, t models.Todo) error {
 	var setClauses []string
 	var args []any
 	i := 1
@@ -141,7 +141,7 @@ func (r *Repo) UpdateTodo(id int64, t models.Todo) error {
 		i,
 	)
 
-	ct, err := r.db.Exec(context.Background(), query, args...)
+	ct, err := r.pool.Exec(ctx, query, args...)
 	if err != nil {
 		return fmt.Errorf("UpdateTodo: %w", err)
 	}
@@ -151,8 +151,8 @@ func (r *Repo) UpdateTodo(id int64, t models.Todo) error {
 	return nil
 }
 
-func (r *Repo) DeleteTodo(id int64) error {
-	ct, err := r.db.Exec(context.Background(), "DELETE FROM todos WHERE id = $1", id)
+func (r *Repo) DeleteTodo(ctx context.Context, id int64) error {
+	ct, err := r.pool.Exec(ctx, "DELETE FROM todos WHERE id = $1", id)
 	if err != nil {
 		return fmt.Errorf("DeleteTodo: %w", err)
 	}

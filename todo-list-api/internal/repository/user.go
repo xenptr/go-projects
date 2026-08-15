@@ -7,10 +7,10 @@ import (
 	"github.com/xenptr/go-projects/todo-list-api/internal/models"
 )
 
-func (r *Repo) CreateUser(u models.User) (int64, error) {
+func (r *Repo) CreateUser(ctx context.Context, u models.User) (int64, error) {
 	var id int64
-	err := r.db.QueryRow(
-		context.Background(),
+	err := r.pool.QueryRow(
+		ctx,
 		`INSERT INTO users (name, email, password_hash)
 		 VALUES ($1, $2, $3)
 		 RETURNING id`,
@@ -24,24 +24,10 @@ func (r *Repo) CreateUser(u models.User) (int64, error) {
 	return id, nil
 }
 
-func (r *Repo) GetUserByID(id int64) (models.User, error) {
+func (r *Repo) GetUserByEmail(ctx context.Context, email string) (models.User, error) {
 	var u models.User
-	err := r.db.QueryRow(
-		context.Background(),
-		`SELECT id, name, email, password_hash, created_at
-		 FROM users WHERE id = $1`,
-		id,
-	).Scan(&u.ID, &u.Name, &u.Email, &u.PasswordHash, &u.CreatedAt)
-	if err != nil {
-		return u, fmt.Errorf("GetUserByID: %w", err)
-	}
-	return u, nil
-}
-
-func (r *Repo) GetUserByEmail(email string) (models.User, error) {
-	var u models.User
-	err := r.db.QueryRow(
-		context.Background(),
+	err := r.pool.QueryRow(
+		ctx,
 		`SELECT id, name, email, password_hash, created_at
 		 FROM users WHERE email = $1`,
 		email,

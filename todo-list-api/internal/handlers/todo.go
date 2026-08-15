@@ -37,13 +37,13 @@ func (h *Handler) CreateTodo(w http.ResponseWriter, r *http.Request) {
 		Description: input.Description,
 	}
 
-	id, err := h.repo.CreateTodo(todo)
+	id, err := h.todoRepo.CreateTodo(r.Context(), todo)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 
-	created, err := h.repo.GetTodoByID(id)
+	created, err := h.todoRepo.GetTodoByID(r.Context(), id)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal server error")
 		return
@@ -65,7 +65,7 @@ func (h *Handler) UpdateTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ownerID, err := h.repo.GetTodoOwner(id)
+	ownerID, err := h.todoRepo.GetTodoOwner(r.Context(), id)
 	if err != nil {
 		writeError(w, http.StatusNotFound, "todo not found")
 		return
@@ -95,12 +95,12 @@ func (h *Handler) UpdateTodo(w http.ResponseWriter, r *http.Request) {
 		Completed:   input.Completed,
 	}
 
-	if err = h.repo.UpdateTodo(id, todo); err != nil {
+	if err = h.todoRepo.UpdateTodo(r.Context(), id, todo); err != nil {
 		writeError(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 
-	updated, err := h.repo.GetTodoByID(id)
+	updated, err := h.todoRepo.GetTodoByID(r.Context(), id)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal server error")
 		return
@@ -122,7 +122,7 @@ func (h *Handler) DeleteTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ownerID, err := h.repo.GetTodoOwner(id)
+	ownerID, err := h.todoRepo.GetTodoOwner(r.Context(), id)
 	if err != nil {
 		writeError(w, http.StatusNotFound, "todo not found")
 		return
@@ -132,7 +132,7 @@ func (h *Handler) DeleteTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = h.repo.DeleteTodo(id); err != nil {
+	if err = h.todoRepo.DeleteTodo(r.Context(), id); err != nil {
 		writeError(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -182,7 +182,7 @@ func (h *Handler) ListTodos(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	todos, total, err := h.repo.ListTodosByUser(userID, page, limit, search)
+	todos, total, err := h.todoRepo.ListTodosByUser(r.Context(), userID, page, limit, search)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal server error")
 		return

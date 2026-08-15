@@ -18,13 +18,13 @@ func main() {
 
 	cfg := config.Load()
 
-	db, err := db.Open(cfg)
+	pool, err := db.Open(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
+	defer pool.Close()
 
-	repo := repository.New(db)
+	repo := repository.New(pool)
 	h := handlers.New(repo, cfg.JWTSecret)
 
 	mux := http.NewServeMux()
@@ -36,5 +36,8 @@ func main() {
 		Addr:    ":" + cfg.AppPort,
 		Handler: mux,
 	}
-	log.Fatal(server.ListenAndServe())
+
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("server terminated unexpectedly: %v", err)
+	}
 }
