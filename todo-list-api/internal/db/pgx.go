@@ -12,10 +12,10 @@ import (
 func Open(cfg *config.Config) (*pgxpool.Pool, error) {
 	dsn := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		cfg.Host,
-		cfg.Port,
-		cfg.User,
-		cfg.Pass,
+		cfg.DBHost,
+		cfg.DBPort,
+		cfg.DBUser,
+		cfg.DBPass,
 		cfg.DBName,
 	)
 
@@ -39,6 +39,7 @@ func Open(cfg *config.Config) (*pgxpool.Pool, error) {
 	}
 
 	if err = pool.Ping(ctx); err != nil {
+		pool.Close()
 		return nil, fmt.Errorf("ping db: %w", err)
 	}
 

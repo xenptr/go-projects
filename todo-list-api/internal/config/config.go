@@ -3,11 +3,17 @@ package config
 import "os"
 
 type Config struct {
-	Host      string
-	Port      string
-	User      string
-	Pass      string
-	DBName    string
+	DBHost string
+	DBPort string
+	DBUser string
+	DBPass string
+	DBName string
+
+	RedisHost     string
+	RedisPort     string
+	RedisUsername string
+	RedisPassword string
+
 	AppPort   string
 	JWTSecret []byte
 }
@@ -19,11 +25,17 @@ func Load() *Config {
 	}
 
 	return &Config{
-		Host:      os.Getenv("DB_HOST"),
-		Port:      os.Getenv("DB_PORT"),
-		User:      os.Getenv("DB_USER"),
-		Pass:      os.Getenv("DB_PASSWORD"),
-		DBName:    os.Getenv("DB_NAME"),
+		DBHost: os.Getenv("DB_HOST"),
+		DBPort: os.Getenv("DB_PORT"),
+		DBUser: os.Getenv("DB_USER"),
+		DBPass: os.Getenv("DB_PASSWORD"),
+		DBName: os.Getenv("DB_NAME"),
+
+		RedisHost:     os.Getenv("REDIS_HOST"),
+		RedisPort:     os.Getenv("REDIS_PORT"),
+		RedisUsername: os.Getenv("REDIS_USERNAME"),
+		RedisPassword: os.Getenv("REDIS_PASSWORD"),
+
 		AppPort:   appPort,
 		JWTSecret: []byte(os.Getenv("JWT_SECRET")),
 	}

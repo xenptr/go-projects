@@ -16,7 +16,7 @@ func New(store repository.Store, secret []byte) *Handler {
 	}
 }
 
-func NewWithRepo(userRepo repository.UserRepository, todoRepo repository.TodoRepository, secret []byte) *Handler {
+func NewWithRepos(userRepo repository.UserRepository, todoRepo repository.TodoRepository, secret []byte) *Handler {
 	return &Handler{
 		userRepo: userRepo,
 		todoRepo: todoRepo,

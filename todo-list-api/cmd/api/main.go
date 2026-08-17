@@ -8,6 +8,8 @@ import (
 	"github.com/xenptr/go-projects/todo-list-api/internal/config"
 	"github.com/xenptr/go-projects/todo-list-api/internal/db"
 	"github.com/xenptr/go-projects/todo-list-api/internal/handlers"
+	"github.com/xenptr/go-projects/todo-list-api/internal/ratelimit"
+	"github.com/xenptr/go-projects/todo-list-api/internal/redis"
 	"github.com/xenptr/go-projects/todo-list-api/internal/repository"
 	"github.com/xenptr/go-projects/todo-list-api/internal/routes"
 )
@@ -24,11 +26,19 @@ func main() {
 	}
 	defer pool.Close()
 
+	redisClient, err := redis.New(cfg)
+	if err != nil {
+		log.Fatalf("redis connection failed: %v", err)
+	}
+	defer redisClient.Close()
+
+	rateLimit := ratelimit.New(redisClient.Client)
+
 	repo := repository.New(pool)
 	h := handlers.New(repo, cfg.JWTSecret)
 
 	mux := http.NewServeMux()
-	routes.RegisterRoutes(mux, h, cfg.JWTSecret)
+	routes.RegisterRoutes(mux, h, cfg.JWTSecret, rateLimit)
 
 	log.Printf("server starting on :%s", cfg.AppPort)
 
