@@ -19,6 +19,10 @@ func New(cfg *config.Config) (*Client, error) {
 		Username: cfg.RedisUsername,
 		Password: cfg.RedisPassword,
 		DB:       0,
+
+		DialTimeout:  5 * time.Second,
+		ReadTimeout:  3 * time.Second,
+		WriteTimeout: 3 * time.Second,
 	}
 
 	client := redis.NewClient(opt)
@@ -27,7 +31,7 @@ func New(cfg *config.Config) (*Client, error) {
 	defer cancel()
 
 	if err := client.Ping(ctx).Err(); err != nil {
-		client.Close()
+		_ = client.Close()
 		return nil, fmt.Errorf("ping redis: %w", err)
 	}
 

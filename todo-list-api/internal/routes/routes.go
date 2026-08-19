@@ -9,7 +9,7 @@ import (
 	"github.com/xenptr/go-projects/todo-list-api/internal/ratelimit"
 )
 
-func RegisterRoutes(mux *http.ServeMux, h *handlers.Handler, secret []byte, rateLimit *ratelimit.Limiter) {
+func RegisterRoutes(mux *http.ServeMux, h *handlers.Handler, secret []byte, rateLimit ratelimit.Limiter) {
 	mux.HandleFunc("GET /", h.Root)
 
 	authRateLimit := middleware.RateLimit(
