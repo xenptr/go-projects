@@ -144,3 +144,42 @@ func TestGetUserByEmail(t *testing.T) {
 		}
 	})
 }
+
+func TestGetUserByID(t *testing.T) {
+	repo, ctx := newTestRepo(t)
+
+	email := fmt.Sprintf("get_by_id_%d@example.com", time.Now().UnixNano())
+	u := models.User{
+		Name:         "ID Lookup User",
+		Email:        email,
+		PasswordHash: "hashed_password_789",
+	}
+
+	id, err := repo.CreateUser(ctx, u)
+	if err != nil {
+		t.Fatalf("CreateUser() returned error: %v", err)
+	}
+	t.Cleanup(func() {
+		_, _ = repo.pool.Exec(ctx, "DELETE FROM users WHERE id = $1", id)
+	})
+
+	t.Run("success returns user by ID", func(t *testing.T) {
+		got, err := repo.GetUserByID(ctx, id)
+		if err != nil {
+			t.Fatalf("GetUserByID() returned error: %v", err)
+		}
+		if got.ID != id {
+			t.Errorf("ID = %d, want %d", got.ID, id)
+		}
+		if got.Email != email {
+			t.Errorf("Email = %q, want %q", got.Email, email)
+		}
+	})
+
+	t.Run("fails when ID does not exist", func(t *testing.T) {
+		_, err := repo.GetUserByID(ctx, -1)
+		if err == nil {
+			t.Fatal("expected error for non-existent ID, got nil")
+		}
+	})
+}

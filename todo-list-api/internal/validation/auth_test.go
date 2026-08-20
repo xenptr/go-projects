@@ -144,3 +144,36 @@ func TestLoginRequest(t *testing.T) {
 		})
 	}
 }
+
+func TestRefreshRequest(t *testing.T) {
+	tests := []struct {
+		name    string
+		request dto.RefreshRequest
+		wantErr bool
+	}{
+		{
+			name:    "valid request",
+			request: dto.RefreshRequest{RefreshToken: "some.jwt.token"},
+			wantErr: false,
+		},
+		{
+			name:    "missing refresh_token",
+			request: dto.RefreshRequest{},
+			wantErr: true,
+		},
+		{
+			name:    "whitespace-only refresh_token",
+			request: dto.RefreshRequest{RefreshToken: "   "},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := RefreshRequest(tt.request)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("RefreshRequest() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

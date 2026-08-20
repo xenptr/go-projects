@@ -156,7 +156,7 @@ func TestCreateTodo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := NewWithRepos(nil, tt.repo, secret)
+			h := NewWithRepos(nil, tt.repo, newMockRefreshStore(), secret)
 
 			var req *http.Request
 			if tt.rawBody != "" {
@@ -330,7 +330,7 @@ func TestUpdateTodo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := NewWithRepos(nil, tt.repo, secret)
+			h := NewWithRepos(nil, tt.repo, newMockRefreshStore(), secret)
 
 			var req *http.Request
 			if tt.rawBody != "" {
@@ -439,7 +439,7 @@ func TestDeleteTodo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := NewWithRepos(nil, tt.repo, secret)
+			h := NewWithRepos(nil, tt.repo, newMockRefreshStore(), secret)
 
 			req := httptest.NewRequest(http.MethodDelete, "/todos/"+tt.pathID, nil)
 			req.SetPathValue("id", tt.pathID)
@@ -575,7 +575,7 @@ func TestListTodos(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := NewWithRepos(nil, tt.repo, secret)
+			h := NewWithRepos(nil, tt.repo, newMockRefreshStore(), secret)
 
 			req := httptest.NewRequest(http.MethodGet, "/todos"+tt.query, nil)
 			if tt.setAuth {
