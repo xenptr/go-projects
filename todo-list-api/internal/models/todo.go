@@ -7,6 +7,6 @@ type Todo struct {
 	UserID      int64     `json:"-"`
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
-	Completed   bool      `json:"copmleted"`
+	Completed   bool      `json:"completed"`
 	CreatedAt   time.Time `json:"created_at"`
 }
