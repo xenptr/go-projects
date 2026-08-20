@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/joho/godotenv"
+	"github.com/xenptr/go-projects/todo-list-api/internal/auth"
 	"github.com/xenptr/go-projects/todo-list-api/internal/config"
 	"github.com/xenptr/go-projects/todo-list-api/internal/db"
 	"github.com/xenptr/go-projects/todo-list-api/internal/handlers"
@@ -33,9 +34,10 @@ func main() {
 	defer redisClient.Close()
 
 	rateLimit := ratelimit.New(redisClient.Client)
+	refreshStore := auth.NewRedisRefreshStore(redisClient.Client)
 
 	repo := repository.New(pool)
-	h := handlers.New(repo, cfg.JWTSecret)
+	h := handlers.New(repo, refreshStore, cfg.JWTSecret)
 
 	mux := http.NewServeMux()
 	routes.RegisterRoutes(mux, h, cfg.JWTSecret, rateLimit)

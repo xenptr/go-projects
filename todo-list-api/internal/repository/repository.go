@@ -10,6 +10,7 @@ import (
 // UserRepository defines the data access contract for user entities.
 type UserRepository interface {
 	CreateUser(ctx context.Context, u models.User) (int64, error)
+	GetUserByID(ctx context.Context, id int64) (models.User, error)
 	GetUserByEmail(ctx context.Context, email string) (models.User, error)
 }
 

@@ -19,3 +19,9 @@ func LoginRequest(r dto.LoginRequest) error {
 	v.Required("password", r.Password)
 	return v.Err()
 }
+
+func RefreshRequest(r dto.RefreshRequest) error {
+	v := New()
+	v.Required("refresh_token", r.RefreshToken)
+	return v.Err()
+}

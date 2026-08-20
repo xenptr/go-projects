@@ -34,6 +34,7 @@ func RegisterRoutes(mux *http.ServeMux, h *handlers.Handler, secret []byte, rate
 
 	mux.Handle("POST /register", authRateLimit(http.HandlerFunc(h.CreateUser)))
 	mux.Handle("POST /login", authRateLimit(http.HandlerFunc(h.Login)))
+	mux.Handle("POST /auth/refresh", authRateLimit(http.HandlerFunc(h.RefreshToken)))
 
 	protected := func(handler http.Handler) http.Handler {
 		return todoRateLimit(authMiddleware(handler))

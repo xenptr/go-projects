@@ -24,6 +24,20 @@ func (r *Repo) CreateUser(ctx context.Context, u models.User) (int64, error) {
 	return id, nil
 }
 
+func (r *Repo) GetUserByID(ctx context.Context, id int64) (models.User, error) {
+	var u models.User
+	err := r.pool.QueryRow(
+		ctx,
+		`SELECT id, name, email, password_hash, created_at
+		 FROM users WHERE id = $1`,
+		id,
+	).Scan(&u.ID, &u.Name, &u.Email, &u.PasswordHash, &u.CreatedAt)
+	if err != nil {
+		return u, fmt.Errorf("GetUserByID: %w", err)
+	}
+	return u, nil
+}
+
 func (r *Repo) GetUserByEmail(ctx context.Context, email string) (models.User, error) {
 	var u models.User
 	err := r.pool.QueryRow(
