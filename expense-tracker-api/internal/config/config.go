@@ -9,7 +9,13 @@ type Config struct {
 	DBPass string
 	DBName string
 
-	AppPort string
+	RedisHost     string
+	RedisPort     string
+	RedisUsername string
+	RedisPassword string
+
+	AppPort   string
+	JWTSecret []byte
 }
 
 func Load() *Config {
@@ -25,6 +31,12 @@ func Load() *Config {
 		DBPass: os.Getenv("DB_PASSWORD"),
 		DBName: os.Getenv("DB_NAME"),
 
-		AppPort: appPort,
+		RedisHost:     os.Getenv("REDIS_HOST"),
+		RedisPort:     os.Getenv("REDIS_PORT"),
+		RedisUsername: os.Getenv("REDIS_USERNAME"),
+		RedisPassword: os.Getenv("REDIS_PASSWORD"),
+
+		AppPort:   appPort,
+		JWTSecret: []byte(os.Getenv("JWT_SECRET")),
 	}
 }

@@ -10,9 +10,12 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/xenptr/go-projects/expense-tracker-api/internal/auth"
 	"github.com/xenptr/go-projects/expense-tracker-api/internal/config"
 	"github.com/xenptr/go-projects/expense-tracker-api/internal/db"
 	"github.com/xenptr/go-projects/expense-tracker-api/internal/handlers"
+	"github.com/xenptr/go-projects/expense-tracker-api/internal/ratelimit"
+	"github.com/xenptr/go-projects/expense-tracker-api/internal/redis"
 	"github.com/xenptr/go-projects/expense-tracker-api/internal/repository"
 	"github.com/xenptr/go-projects/expense-tracker-api/internal/routes"
 )
@@ -28,11 +31,21 @@ func main() {
 	}
 	defer pool.Close()
 
+	redisClient, err := redis.New(cfg)
+	if err != nil {
+		log.Printf("redis connection failed: %v", err)
+		return
+	}
+	defer redisClient.Close()
+
+	rateLimit := ratelimit.New(redisClient.Client)
+	refreshStore := auth.NewRedisRefreshStore(redisClient.Client)
+
 	repo := repository.New(pool)
-	h := handlers.New(repo)
+	h := handlers.New(repo, refreshStore, cfg.JWTSecret)
 
 	mux := http.NewServeMux()
-	routes.RegisterRoutes(mux, h)
+	routes.RegisterRoutes(mux, h, cfg.JWTSecret, rateLimit)
 
 	server := &http.Server{
 		Addr:    ":" + cfg.AppPort,
