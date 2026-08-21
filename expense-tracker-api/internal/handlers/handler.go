@@ -7,6 +7,7 @@ import (
 
 type Handler struct {
 	userRepo     repository.UserRepository
+	expenseRepo  repository.ExpenseRepository
 	refreshStore auth.RefreshTokenStore
 	secret       []byte
 }
@@ -14,14 +15,16 @@ type Handler struct {
 func New(store repository.Store, refreshStore auth.RefreshTokenStore, secret []byte) *Handler {
 	return &Handler{
 		userRepo:     store,
+		expenseRepo:  store,
 		refreshStore: refreshStore,
 		secret:       secret,
 	}
 }
 
-func NewWithRepos(userRepo repository.UserRepository, refreshStore auth.RefreshTokenStore, secret []byte) *Handler {
+func NewWithRepos(userRepo repository.UserRepository, expenseRepo repository.ExpenseRepository, refreshStore auth.RefreshTokenStore, secret []byte) *Handler {
 	return &Handler{
 		userRepo:     userRepo,
+		expenseRepo:  expenseRepo,
 		refreshStore: refreshStore,
 		secret:       secret,
 	}
