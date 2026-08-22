@@ -42,6 +42,10 @@ Projects are organized into separate directories, each with its own source code 
    A RESTful API for managing personal to-do lists. Includes user registration and login, JWT access tokens with refresh token rotation, full CRUD on todos with ownership checks, pagination, search, and per-IP rate limiting via Redis.
    Project URL: https://roadmap.sh/projects/todo-list-api
 
+10. **Expense Tracker API**
+   A RESTful API for managing personal expenses. Includes user signup and login, JWT access tokens with refresh token rotation, full CRUD on expenses with ownership checks, date-range filtering (past week, month, 3 months, or custom), category validation, and Redis-backed rate limiting.
+   Project URL: https://roadmap.sh/projects/expense-tracker-api
+
 ## More Projects
 
 Additional projects will be added as I progress through the roadmap.
