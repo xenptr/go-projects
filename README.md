@@ -46,6 +46,10 @@ Projects are organized into separate directories, each with its own source code 
    A RESTful API for managing personal expenses. Includes user signup and login, JWT access tokens with refresh token rotation, full CRUD on expenses with ownership checks, date-range filtering (past week, month, 3 months, or custom), category validation, and Redis-backed rate limiting.
    Project URL: https://roadmap.sh/projects/expense-tracker-api
 
+11. **TMDB CLI**
+    A command line tool to fetch and display popular, top-rated, upcoming, and now playing movies from The Movie Database (TMDB) API.
+    Project URL: https://roadmap.sh/projects/tmdb-cli
+
 ## More Projects
 
 Additional projects will be added as I progress through the roadmap.
