@@ -50,6 +50,10 @@ Projects are organized into separate directories, each with its own source code 
     A command line tool to fetch and display popular, top-rated, upcoming, and now playing movies from The Movie Database (TMDB) API.
     Project URL: https://roadmap.sh/projects/tmdb-cli
 
+12. **Caching Proxy**
+    A caching reverse proxy CLI that forwards HTTP requests to an origin server and caches responses in Redis. Sets `X-Cache: HIT/MISS` headers and supports a `--clear-cache` flag to flush the cache.
+    Project URL: https://roadmap.sh/projects/caching-server
+
 ## More Projects
 
 Additional projects will be added as I progress through the roadmap.
