@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/xenptr/go-projects/caching-proxy/internal/cache"
@@ -28,6 +29,15 @@ type Proxy struct {
 	origin *url.URL
 	cache  *cache.Client
 	client *http.Client
+
+	inFlight map[string]*call
+	mu       sync.Mutex
+}
+
+type call struct {
+	done chan struct{}
+	resp *cachedResponse
+	err  error
 }
 
 // New creates a new Proxy that forwards requests to origin and caches
@@ -39,33 +49,86 @@ func New(origin string, c *cache.Client) (*Proxy, error) {
 	}
 
 	return &Proxy{
-		origin: u,
-		cache:  c,
-		client: &http.Client{Timeout: 30 * time.Second},
+		origin:   u,
+		cache:    c,
+		client:   &http.Client{Timeout: 30 * time.Second},
+		inFlight: make(map[string]*call),
 	}, nil
 }
 
 // ServeHTTP implements http.Handler.
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	cacheable := isCacheableMethod(r.Method)
+
+	// Non-cacheable requests go directly upstream.
+	if !cacheable {
+		p.serveDirect(w, r)
+		return
+	}
+
 	key := cacheKey(r)
 
 	if cached, hit := p.fromCache(r.Context(), key); hit {
-		writeResponse(w, cached, true)
+		writeResponse(w, cached, "HIT")
 		log.Printf("CACHE HIT  %s %s", r.Method, r.URL.Path)
 		return
 	}
 
-	upstream, err := p.fetchUpstream(r)
+	p.mu.Lock()
+
+	// Check whether another goroutine is already fetching this key
+	if existed, exist := p.inFlight[key]; exist {
+		p.mu.Unlock()
+
+		// Wait for the leader to finish
+		select {
+		case <-existed.done:
+			if existed.err != nil {
+				http.Error(w, "bad gateway", http.StatusBadGateway)
+				return
+			}
+
+			writeResponse(w, existed.resp, "SHARED")
+			log.Printf("CACHE SHARED  %s %s", r.Method, r.URL.Path)
+			return
+
+		// or if client's request is cancelled.
+		case <-r.Context().Done():
+			log.Printf("REQUEST CANCELLED %s %s", r.Method, r.URL.Path)
+			return
+		}
+
+	}
+
+	// No one is fetching this key.
+	// This request becomes the leader.
+	c := &call{
+		done: make(chan struct{}),
+	}
+
+	p.inFlight[key] = c
+
+	p.mu.Unlock()
+
+	// Use an independent context so the shared upstream request
+	// continues even if the leader's client disconnects.
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	upstream, err := p.fetchUpstream(ctx, r)
 	if err != nil {
-		log.Printf("upstream error: %v", err)
+		p.finishCall(key, c, nil, err)
+
 		http.Error(w, "bad gateway", http.StatusBadGateway)
 		return
+
 	}
 	defer upstream.Body.Close()
 
 	body, err := io.ReadAll(upstream.Body)
 	if err != nil {
-		log.Printf("reading upstream body: %v", err)
+		p.finishCall(key, c, nil, err)
+
 		http.Error(w, "bad gateway", http.StatusBadGateway)
 		return
 	}
@@ -81,8 +144,52 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		p.storeCache(r.Context(), key, resp)
 	}
 
-	writeResponse(w, resp, false)
+	p.finishCall(key, c, resp, nil)
+
+	writeResponse(w, resp, "MISS")
 	log.Printf("CACHE MISS %s %s -> %d", r.Method, r.URL.Path, upstream.StatusCode)
+}
+
+func (p *Proxy) serveDirect(w http.ResponseWriter, r *http.Request) {
+	upstream, err := p.fetchUpstream(r.Context(), r)
+	if err != nil {
+		log.Printf("upstream error: %v", err)
+		http.Error(w, "bad gateway", http.StatusBadGateway)
+		return
+
+	}
+	defer upstream.Body.Close()
+
+	// Forward upstream headers
+	for k, vv := range upstream.Header {
+		if isHopByHop(k) {
+			continue
+		}
+
+		for _, v := range vv {
+			w.Header().Add(k, v)
+		}
+	}
+
+	w.Header().Set("X-Cache", "BYPASS")
+	w.WriteHeader(upstream.StatusCode)
+
+	_, _ = io.Copy(w, upstream.Body)
+
+	log.Printf("CACHE BYPASS %s %s -> %d", r.Method, r.URL.Path, upstream.StatusCode)
+}
+
+func (p *Proxy) finishCall(key string, c *call, resp *cachedResponse, err error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	delete(p.inFlight, key)
+
+	c.resp = resp
+	c.err = err
+
+	// Wake everyone waiting
+	close(c.done)
 }
 
 // ClearAll deletes every key in the Redis DB.
@@ -92,12 +199,12 @@ func (p *Proxy) ClearAll(ctx context.Context) error {
 }
 
 // fetchUpstream forwards the incoming request to the origin server.
-func (p *Proxy) fetchUpstream(r *http.Request) (*http.Response, error) {
+func (p *Proxy) fetchUpstream(ctx context.Context, r *http.Request) (*http.Response, error) {
 	target := *p.origin
 	target.Path = strings.TrimRight(target.Path, "/") + r.URL.Path
 	target.RawQuery = r.URL.RawQuery
 
-	req, err := http.NewRequestWithContext(r.Context(), r.Method, target.String(), r.Body)
+	req, err := http.NewRequestWithContext(ctx, r.Method, target.String(), r.Body)
 	if err != nil {
 		return nil, fmt.Errorf("building upstream request: %w", err)
 	}
@@ -142,7 +249,7 @@ func (p *Proxy) storeCache(ctx context.Context, key string, resp *cachedResponse
 	}
 }
 
-func writeResponse(w http.ResponseWriter, resp *cachedResponse, fromCache bool) {
+func writeResponse(w http.ResponseWriter, resp *cachedResponse, cacheStatus string) {
 	for k, vv := range resp.Headers {
 		if isHopByHop(k) {
 			continue
@@ -152,11 +259,7 @@ func writeResponse(w http.ResponseWriter, resp *cachedResponse, fromCache bool) 
 		}
 	}
 
-	if fromCache {
-		w.Header().Set("X-Cache", "HIT")
-	} else {
-		w.Header().Set("X-Cache", "MISS")
-	}
+	w.Header().Set("X-Cache", cacheStatus)
 
 	w.WriteHeader(resp.StatusCode)
 	_, _ = w.Write(resp.Body)
@@ -176,4 +279,8 @@ func isHopByHop(h string) bool {
 		return true
 	}
 	return false
+}
+
+func isCacheableMethod(method string) bool {
+	return method == http.MethodGet || method == http.MethodHead
 }
